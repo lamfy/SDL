@@ -1,0 +1,143 @@
+################################################################################
+#                                                                              #
+#                               Student's t-Test                               #
+#                                                                              #
+################################################################################
+
+library(dplyr)
+library(lsr)
+
+# ------------------------------------------------------------------------------
+# ---------- Equality of Variances (Two Variances) -----------------------------
+# ------------------------------------------------------------------------------
+
+# --------------------------------------
+# ----- Function -----------------------
+# --------------------------------------
+
+f.test.manual <- function(S1, S2, N1, N2) {
+  F1 <- (S1^2)/(S2^2)
+  P1.Low <- pf(F1, N1-1, N2-1)
+  P1.Upp <- 1-P1.Low
+  F2 <- (S2^2)/(S1^2)
+  P2.Low <- pf(F2, N2-1, N1-1)
+  P2.Upp <- 1-P2.Low
+  if (S1 > S2) {
+    P <- P1.Upp+P2.Low
+  } else if (S1 < S2) {
+    P <- P1.Low+P2.Upp
+  } else {
+    P <- pmin(P1.Upp+P2.Low, 1)
+  }
+  FDat <- c(F1, N1-1, N2-1, P)
+  names(FDat) <- c("F", "df1", "df2", "p-value")
+  return(FDat)
+}
+
+# Credit: https://math.stackexchange.com/questions/2725996/finding-the-p-value-of-a-2-sided-f-test
+
+# --------------------------------------
+# ----- Data ---------------------------
+# --------------------------------------
+
+NX <- 101; MX <- 10; SX <- 2
+NY <- 151; MY <- 10; SY <- 3
+
+data <- data.frame(bind_rows(data.frame(Group=factor(rep(x=1, each=NX), levels=1, labels="X"),
+                                        Score=rnorm(n=NX, mean=MX, sd=SX)),
+                             data.frame(Group=factor(rep(x=2, each=NY), levels=2, labels="Y"),
+                                        Score=rnorm(n=NY, mean=MY, sd=SY))))
+
+mean(data[data$Group=="X",]$Score); sd(data[data$Group=="X",]$Score); nrow(data[data$Group=="X",])
+mean(data[data$Group=="Y",]$Score); sd(data[data$Group=="Y",]$Score); nrow(data[data$Group=="Y",])
+
+# --------------------------------------
+# ----- Test Function ------------------
+# --------------------------------------
+
+# ----- Base R -------------------------
+
+var.test(data[data$Group=="Y",]$Score, data[data$Group=="X",]$Score)
+
+# ----- User-Defined -------------------
+
+f.test.manual(sd(data[data$Group=="Y",]$Score),
+              sd(data[data$Group=="X",]$Score),
+              nrow(data[data$Group=="Y",]),
+              nrow(data[data$Group=="X",]))
+
+# ------------------------------------------------------------------------------
+# ---------- Equality of Means (Two Means) -------------------------------------
+# ------------------------------------------------------------------------------
+
+# --------------------------------------
+# ----- Function -----------------------
+# --------------------------------------
+
+t.test.manual <- function(M1, M2, S1, S2, N1, N2, equal.variance=TRUE) {
+  if (equal.variance==TRUE) {
+    VP <- (((N1-1)*(S1^2)+(N2-1)*(S2^2))/(N1+N2-2))
+    SE <- sqrt((VP/N1)+(VP/N2))
+    DF <- N1+N2-2
+  } else {
+    VP <- ((S1^2)+(S2^2))/2
+    SE <- sqrt((S1^2/N1)+(S2^2/N2))
+    DF <- ((((S1^2)/N1)+((S2^2)/N2))^2)/(((S1^4)/((N1^2)*(N1-1)))+((S2^4)/((N2^2)*(N2-1))))
+  }
+  T <- (M1-M2)/SE
+  P <- 2*pt(-abs(T), DF)
+  D <- abs((M1-M2)/sqrt(VP))
+  TDat <- c(M1, M2, DF, T, P, D)
+  names(TDat) <- c("Mean 1", "Mean 2", "df", "t", "p-value", "Cohen's d")
+  return(TDat)
+}
+
+# For unequal variances, the standard deviation for Cohen's d is calculated based on
+# the suggestion by Bonett (2008) Confidence intervals for standardized linear constrasts of means
+# https://www.ncbi.nlm.nih.gov/pubmed/18557680
+
+# Credits: https://stats.stackexchange.com/questions/210352/do-cohens-d-and-hedges-g-apply-to-the-welch-t-test
+
+# --------------------------------------
+# ----- Data ---------------------------
+# --------------------------------------
+
+NX <- 101; MX <- 10; SX <- 2
+NY <- 151; MY <- 10; SY <- 3
+
+data <- data.frame(bind_rows(data.frame(Group=factor(rep(x=1, each=NX), levels=1, labels="X"),
+                                        Score=rnorm(n=NX, mean=MX, sd=SX)),
+                             data.frame(Group=factor(rep(x=2, each=NY), levels=2, labels="Y"),
+                                        Score=rnorm(n=NY, mean=MY, sd=SY))))
+
+mean(data[data$Group=="X",]$Score); sd(data[data$Group=="X",]$Score); nrow(data[data$Group=="X",])
+mean(data[data$Group=="Y",]$Score); sd(data[data$Group=="Y",]$Score); nrow(data[data$Group=="Y",])
+
+# --------------------------------------
+# ----- Test Function ------------------
+# --------------------------------------
+
+# ----- Base R -------------------------
+
+t.test(data$Score~data$Group, var.equal=TRUE)
+cohensD(data[data$Group=="X",]$Score, data[data$Group=="Y",]$Score, method="pooled")
+
+t.test(data$Score~data$Group, var.equal=FALSE)
+cohensD(data[data$Group=="X",]$Score, data[data$Group=="Y",]$Score, method="unequal")
+
+# ----- User-Defined -------------------
+
+t.test.manual(mean(data[data$Group=="X",]$Score), 
+              mean(data[data$Group=="Y",]$Score), 
+              sd(data[data$Group=="X",]$Score), 
+              sd(data[data$Group=="Y",]$Score),
+              nrow(data[data$Group=="X",]), 
+              nrow(data[data$Group=="Y",]),
+              equal.variance=TRUE)
+t.test.manual(mean(data[data$Group=="X",]$Score), 
+              mean(data[data$Group=="Y",]$Score), 
+              sd(data[data$Group=="X",]$Score), 
+              sd(data[data$Group=="Y",]$Score),
+              nrow(data[data$Group=="X",]), 
+              nrow(data[data$Group=="Y",]),
+              equal.variance=FALSE)
