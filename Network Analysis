@@ -1,0 +1,19 @@
+library(bootnet)
+library(qgraph)
+library(igraph)
+
+data.const <- subset(data, select=c(DLT1, DLT2, DLT3, DLT4, DLT5, DLT6, DLT7))
+
+network.const <- estimateNetwork(data.const, default="EBICglasso")
+qgraph.const <- qgraph(network.const[[1]], layout="spring"); plot(qgraph.const)
+centralityPlot(network.const, include=c("Strength", "Closeness", "Betweenness"))
+
+data.items <- subset(data, select=c(DLO1, DLO2, DLO3, DLO4, DLO5,
+                                    DLO6, DLO7, DLO8, DLO9, DLO10,
+                                    DLO11, DLO12, DLO13, DLO14, DLO15,
+                                    DLO16, DLO17, DLO18, DLO19, DLO20,
+                                    DLO21))
+
+network.items <- estimateNetwork(data.items, default="EBICglasso")
+qgraph.items <- qgraph(network.items[[1]], layout="spring"); plot(qgraph.items)
+centralityPlot(network.items, include=c("Strength", "Closeness", "Betweenness"))
