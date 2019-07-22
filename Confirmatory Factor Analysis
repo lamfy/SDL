@@ -1,0 +1,84 @@
+library(lavaan)
+library(semPlot)
+
+# --------------------------------------
+# ----- SDL ----------------------------
+# --------------------------------------
+
+model.sdlt <- "SDL =~ SDL1+SDL2+SDL3+SDL4+SDL5+
+                      SDL6+SDL7+SDL8+SDL9+SDL10+
+                      SDL11+SDL12+SDL13+SDL14+SDL15+
+                      SDL16
+               SDL1 ~~ SDL9
+               SDL5 ~~ SDL6
+               SDL14 ~~ SDL16
+               SDL3 ~~ SDL4
+               SDL7 ~~  SDL9
+               SDL1 ~~ SDL16
+               SDL7 ~~ SDL16
+               SDL9 ~~ SDL16
+               SDL1 ~~  SDL2
+               SDL1 ~~  SDL7
+               SDL9 ~~ SDL14
+               SDL1 ~~ SDL14"
+
+fit.sdlt <- cfa(model.sdlt, data=data.test)
+summary(fit.sdlt, fit.measures=TRUE)
+semPaths(fit.sdlt, whatLabels="stand", residuals=FALSE, curvePivot=TRUE)
+mod.sdlt <- modindices(fit.sdlt)
+mod.sdlt[order(-mod.sdlt$mi),]
+
+# --------------------------------------
+# ----- DLOQ ---------------------------
+# --------------------------------------
+
+model.dltt <- "# Structural Model
+
+               DLOQ =~ NA*DLT1+DLT2+DLT3+DLT4+DLT5+DLT6+DLT7
+               DLOQ ~~ 1*DLOQ
+
+               # Measurement Model
+
+               DLT1 =~ DLO1+DLO2+DLO3
+               DLT2 =~ DLO4+DLO5+DLO6
+               DLT3 =~ DLO7+DLO8+DLO9
+               DLT4 =~ DLO10+DLO11+DLO12
+               DLT5 =~ DLO13+DLO14+DLO15
+               DLT6 =~ DLO16+DLO17+DLO18
+               DLT7 =~ DLO19+DLO20+DLO21"
+
+fit.dltt <- cfa(model.dltt, data=data.test)
+summary(fit.dltt, fit.measures=TRUE, standardized=TRUE)
+semPaths(fit.dltt, whatLabels="stand", residuals=FALSE, curvePivot=TRUE)
+
+model.dlt1 <- "DLT1 =~ DLO1+DLO2+DLO3"
+model.dlt2 <- "DLT2 =~ DLO4+DLO5+DLO6"
+model.dlt3 <- "DLT3 =~ DLO7+DLO8+DLO9"
+model.dlt4 <- "DLT4 =~ DLO10+DLO11+DLO12"
+model.dlt5 <- "DLT5 =~ DLO13+DLO14+DLO15"
+model.dlt6 <- "DLT6 =~ DLO16+DLO17+DLO18"
+model.dlt7 <- "DLT7 =~ DLO19+DLO20+DLO21"
+
+fit.dlt1 <- cfa(model.dlt1, data=data)
+fit.dlt2 <- cfa(model.dlt2, data=data)
+fit.dlt3 <- cfa(model.dlt3, data=data)
+fit.dlt4 <- cfa(model.dlt4, data=data)
+fit.dlt5 <- cfa(model.dlt5, data=data)
+fit.dlt6 <- cfa(model.dlt6, data=data)
+fit.dlt7 <- cfa(model.dlt7, data=data)
+
+summary(fit.dlt1, fit.measures=TRUE)
+summary(fit.dlt2, fit.measures=TRUE)
+summary(fit.dlt3, fit.measures=TRUE)
+summary(fit.dlt4, fit.measures=TRUE)
+summary(fit.dlt5, fit.measures=TRUE)
+summary(fit.dlt6, fit.measures=TRUE)
+summary(fit.dlt7, fit.measures=TRUE)
+
+semPaths(fit.dlt1, whatLabels="est", standardized=TRUE)
+semPaths(fit.dlt2, whatLabels="est", standardized=TRUE)
+semPaths(fit.dlt3, whatLabels="est", standardized=TRUE)
+semPaths(fit.dlt4, whatLabels="est", standardized=TRUE)
+semPaths(fit.dlt5, whatLabels="est", standardized=TRUE)
+semPaths(fit.dlt6, whatLabels="est", standardized=TRUE)
+semPaths(fit.dlt7, whatLabels="est", standardized=TRUE)
