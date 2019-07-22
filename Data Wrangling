@@ -1,0 +1,150 @@
+library(readxl) # For loading data
+library(readr) # For parse_number
+library(xlsx) # For write.xlsx
+
+setwd("~/SDL2019"); dir() # Set working directory
+
+data.psst <- read_excel("190527_sdl_psst.xlsx")
+data.psst <- data.psst[,1:77]
+colnames(data.psst) <- c("ID", 
+                         "SDL1", "SDL2", "SDL3", "SDL4", "SDL5",
+                         "SDL6", "SDL7", "SDL8", "SDL9", "SDL10",
+                         "SDL11", "SDL12", "SDL13", "SDL14", "SDL15",
+                         "SDL16",
+                         "DLO1", "DLO2", "DLO3", "DLO4", "DLO5",
+                         "DLO6", "DLO7", "DLO8", "DLO9", "DLO10",
+                         "DLO11", "DLO12", "DLO13", "DLO14", "DLO15",
+                         "DLO16", "DLO17", "DLO18", "DLO19", "DLO20",
+                         "DLO21",
+                         "QLT1", "QLT2",
+                         "AGN", "AGN_OTH",
+                         "JBF1", "JBF2", "JBF3", "JBF4", "JBF5",
+                         "JBF6", "JBF7", "JBF8", "JBF9", "JBF10",
+                         "JBF11", "JBF12", "JBF13", "JBF14", "JBF15",
+                         "JBF16", "JBF17", "JBF18", "JBF19", "JBF20",
+                         "JBF21", "JBF22", "JBF23", "JBF24", "JBF25",
+                         "JBF26", "JBF27", "JBF28", "JBF29",
+                         "JBN", "DES", "SEX", "AGE", "SVC", "FDB")
+data.psst <- subset(data.psst, select=c(ID, 
+                                        SDL1, SDL2, SDL3, SDL4, SDL5,
+                                        SDL6, SDL7, SDL8, SDL9, SDL10,
+                                        SDL11, SDL12, SDL13, SDL14, SDL15,
+                                        SDL16,
+                                        DLO1, DLO2, DLO3, DLO4, DLO5,
+                                        DLO6, DLO7, DLO8, DLO9, DLO10,
+                                        DLO11, DLO12, DLO13, DLO14, DLO15,
+                                        DLO16, DLO17, DLO18, DLO19, DLO20,
+                                        DLO21,
+                                        QLT1, QLT2,
+                                        AGN, AGN_OTH,
+                                        JBN, DES, SEX, AGE, SVC, FDB))
+
+data.fmsg <- read_excel("190527_sdl_formsg.xlsx")
+data.fmsg <- data.fmsg[,-2]
+colnames(data.fmsg) <- c("ID", 
+                         "SDL1", "SDL2", "SDL3", "SDL4", "SDL5",
+                         "SDL6", "SDL7", "SDL8", "SDL9", "SDL10",
+                         "SDL11", "SDL12", "SDL13", "SDL14", "SDL15",
+                         "SDL16",
+                         "DLO1", "DLO2", "DLO3", "DLO4", "DLO5",
+                         "DLO6", "DLO7", "DLO8", "DLO9", "DLO10",
+                         "DLO11", "DLO12", "DLO13", "DLO14", "DLO15",
+                         "DLO16", "DLO17", "DLO18", "DLO19", "DLO20",
+                         "DLO21",
+                         "QLT1", "QLT2",
+                         "AGN", "AGN_OTH",
+                         "JBF", "JBN", "DES", "SEX", "AGE", 
+                         "SVC", "FDB")
+data.fmsg <- subset(data.fmsg, select=c(ID, 
+                                        SDL1, SDL2, SDL3, SDL4, SDL5,
+                                        SDL6, SDL7, SDL8, SDL9, SDL10,
+                                        SDL11, SDL12, SDL13, SDL14, SDL15,
+                                        SDL16,
+                                        DLO1, DLO2, DLO3, DLO4, DLO5,
+                                        DLO6, DLO7, DLO8, DLO9, DLO10,
+                                        DLO11, DLO12, DLO13, DLO14, DLO15,
+                                        DLO16, DLO17, DLO18, DLO19, DLO20,
+                                        DLO21,
+                                        QLT1, QLT2,
+                                        AGN, AGN_OTH,
+                                        JBN, DES, SEX, AGE, 
+                                        SVC, FDB))
+
+data <- as.data.frame(rbind(data.psst, data.fmsg))
+
+data$SDL1 <- parse_number(data$SDL1, na=c("NA"))
+data$SDL2 <- parse_number(data$SDL2, na=c("NA"))
+data$SDL3 <- parse_number(data$SDL3, na=c("NA"))
+data$SDL4 <- parse_number(data$SDL4, na=c("NA"))
+data$SDL5 <- parse_number(data$SDL5, na=c("NA"))
+data$SDL6 <- parse_number(data$SDL6, na=c("NA"))
+data$SDL7 <- parse_number(data$SDL7, na=c("NA"))
+data$SDL8 <- parse_number(data$SDL8, na=c("NA"))
+data$SDL9 <- parse_number(data$SDL9, na=c("NA"))
+data$SDL10 <- parse_number(data$SDL10, na=c("NA"))
+data$SDL11 <- parse_number(data$SDL11, na=c("NA"))
+data$SDL12 <- parse_number(data$SDL12, na=c("NA"))
+data$SDL13 <- parse_number(data$SDL13, na=c("NA"))
+data$SDL14 <- parse_number(data$SDL14, na=c("NA"))
+data$SDL15 <- parse_number(data$SDL15, na=c("NA"))
+data$SDL16 <- parse_number(data$SDL16, na=c("NA"))
+
+data$DLO1 <- parse_number(data$DLO1, na=c("NA"))
+data$DLO2 <- parse_number(data$DLO2, na=c("NA"))
+data$DLO3 <- parse_number(data$DLO3, na=c("NA"))
+data$DLO4 <- parse_number(data$DLO4, na=c("NA"))
+data$DLO5 <- parse_number(data$DLO5, na=c("NA"))
+data$DLO6 <- parse_number(data$DLO6, na=c("NA"))
+data$DLO7 <- parse_number(data$DLO7, na=c("NA"))
+data$DLO8 <- parse_number(data$DLO8, na=c("NA"))
+data$DLO9 <- parse_number(data$DLO9, na=c("NA"))
+data$DLO10 <- parse_number(data$DLO10, na=c("NA"))
+data$DLO11 <- parse_number(data$DLO11, na=c("NA"))
+data$DLO12 <- parse_number(data$DLO12, na=c("NA"))
+data$DLO13 <- parse_number(data$DLO13, na=c("NA"))
+data$DLO14 <- parse_number(data$DLO14, na=c("NA"))
+data$DLO15 <- parse_number(data$DLO15, na=c("NA"))
+data$DLO16 <- parse_number(data$DLO16, na=c("NA"))
+data$DLO17 <- parse_number(data$DLO17, na=c("NA"))
+data$DLO18 <- parse_number(data$DLO18, na=c("NA"))
+data$DLO19 <- parse_number(data$DLO19, na=c("NA"))
+data$DLO20 <- parse_number(data$DLO20, na=c("NA"))
+data$DLO21 <- parse_number(data$DLO21, na=c("NA"))
+
+data$SDLT <- rowMeans(data[,2:17], na.rm=TRUE)
+data$DLOT <- rowMeans(data[,18:38], na.rm=TRUE)
+data$DLT1 <- rowMeans(data[,18:20], na.rm=TRUE)
+data$DLT2 <- rowMeans(data[,21:23], na.rm=TRUE)
+data$DLT3 <- rowMeans(data[,24:26], na.rm=TRUE)
+data$DLT4 <- rowMeans(data[,27:29], na.rm=TRUE)
+data$DLT5 <- rowMeans(data[,30:32], na.rm=TRUE)
+data$DLT6 <- rowMeans(data[,33:35], na.rm=TRUE)
+data$DLT7 <- rowMeans(data[,36:38], na.rm=TRUE)
+
+data$DESR <- data$DES
+data$DESR[data$DESR=="Manager"] <- "Supervisor"
+data$DESR[data$DESR=="Middle Management"] <- "Supervisor"
+data$DESR[data$DESR=="Senior Management"] <- "Supervisor"
+data$DESR[data$DESR=="Senior Officer"] <- "Supervisee"
+data$DESR[data$DESR=="Support Officer"] <- "Supervisee"
+
+data$AGER <- data$AGE
+data$AGER[data$AGER=="25 years old or below" | data$AGER=="26 - 30 years old"] <- "20s"
+data$AGER[data$AGER=="31 - 35 years old" | data$AGER=="36 - 40 years old"] <- "30s"
+data$AGER[data$AGER=="41 - 45 years old" | data$AGER=="46 - 50 years old"] <- "40s"
+
+data$SEX[data$SEX=="Others"] <- NA
+
+AGN_Split1 <- strsplit(data$AGN, " -")
+AGNR1 <- list()
+for(i in 1:nrow(data)) {
+  AGNR1[i] <- AGN_Split1[[i]][1]
+}
+AGNR1 <- unlist(AGNR1)
+AGN_Split2 <- strsplit(AGNR1, " \\(")
+AGNR <- list()
+for(i in 1:nrow(data)) {
+  AGNR[i] <- AGN_Split2[[i]][1]
+}
+AGNR <- unlist(AGNR)
+data$AGNR <- AGNR
