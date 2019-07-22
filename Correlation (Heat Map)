@@ -1,0 +1,81 @@
+library(reshape2)
+
+cormat.lwr <- function(x) {
+  x[upper.tri(x)] <- NA
+  return(x)
+}
+
+cormat.upr <- function(x) {
+  x[lower.tri(x)] <- NA
+  return(x)
+}
+
+cormat.const <- cor(subset(data, select=c(SDLT, DLT1, DLT2, DLT3, DLT4,
+                                          DLT5, DLT6, DLT7)), method="spearman", use="complete.obs")
+melted.const <- melt(cormat.const)
+
+p.const <- ggplot(melted.const, aes(x=Var1, y=Var2)) +
+  geom_tile(aes(fill=value)) +
+  geom_text(aes(label=round(value, 2))) +
+  scale_fill_gradient(limits=c(-1,1), low="red", high="green", name="Correlation") +
+  theme_bw() +
+  theme(axis.title.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.x=element_text(color="black"),
+        axis.text.y=element_text(color="black"),
+        axis.line=element_line(size=1, colour = "black"),
+        panel.border=element_rect(size=1, color="black", fill=NA), 
+        panel.background=element_blank())
+p.const
+
+melted.const.lwr <- melt(cormat.lwr(cormat.const), na.rm=TRUE)
+
+p.const.lwr <- ggplot(melted.const.lwr, aes(x=Var1, y=Var2)) +
+  geom_tile(aes(fill=value)) +
+  geom_text(aes(label=round(value, 2))) +
+  scale_fill_gradient(limits=c(-1,1), low="red", high="green", name="Correlation") +
+  theme_bw() +
+  theme(axis.title.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.x=element_text(color="black"),
+        axis.text.y=element_text(color="black"),
+        axis.line=element_line(size=1, colour = "black"),
+        panel.border=element_rect(size=1, color="black", fill=NA), 
+        panel.background=element_blank())
+p.const.lwr
+
+melted.const.upr <- melt(cormat.upr(cormat.const), na.rm=TRUE)
+
+p.const.upr <- ggplot(melted.const.upr, aes(x=Var1, y=Var2)) +
+  geom_tile(aes(fill=value)) +
+  geom_text(aes(label=round(value, 2))) +
+  scale_fill_gradient(limits=c(-1,1), low="red", high="green", name="Correlation") +
+  theme_bw() +
+  theme(axis.title.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.x=element_text(color="black"),
+        axis.text.y=element_text(color="black"),
+        axis.line=element_line(size=1, colour = "black"),
+        panel.border=element_rect(size=1, color="black", fill=NA), 
+        panel.background=element_blank())
+p.const.upr
+
+cormat.items <- cor(subset(data, select=c(SDL1, SDL2, SDL3, SDL4, SDL5,
+                                          SDL6, SDL7, SDL8, SDL9, SDL10,
+                                          SDL11, SDL12, SDL13, SDL14, SDL15,
+                                          SDL16,
+                                          DLO1, DLO2, DLO3, DLO4, DLO5,
+                                          DLO6, DLO7, DLO8, DLO9, DLO10,
+                                          DLO11, DLO12, DLO13, DLO14, DLO15,
+                                          DLO16, DLO17, DLO18, DLO19, DLO20,
+                                          DLO21)), method="spearman", use="complete.obs")
+
+melted.items <- melt(cormat.items)
+
+p.items <- ggplot(melted.items, aes(x=Var1, y=Var2)) +
+  geom_tile(aes(fill=value)) +
+  scale_fill_gradient(low="white", high="green", name="Spearman's\nRho") +
+  theme_bw() +
+  theme(axis.title.x=element_blank(),
+        axis.title.y=element_blank())
+p.items
