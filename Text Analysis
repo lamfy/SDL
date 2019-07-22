@@ -1,0 +1,398 @@
+# ------------------------------------------------------------------------------
+# ---------- Text Analysis (Positive) ------------------------------------------
+# ------------------------------------------------------------------------------
+
+library(readxl)
+library(tm)
+library(topicmodels)
+library(wordcloud)
+library(tidytext)
+library(ldatuning)
+library(data.table)
+library(ggplot2)
+library(plotly)
+library(dplyr)
+library(Hmisc)
+library(textstem)
+
+data.tm.pos <- subset(data, select=c(ID, QLT1))
+data.tm.pos$QLT1 <- iconv(data.tm.pos$QLT1, from="UTF-8", to="ASCII//TRANSLIT")
+data.tm.pos <- na.omit(data.tm.pos)
+colnames(data.tm.pos) <-c("doc_id", "text")
+
+head(data.tm.pos)
+dim(data.tm.pos)
+
+# --------------------------------------
+# ----- Bigrams ------------------------
+# --------------------------------------
+
+bigram.pos <- unnest_tokens(data.tm.pos, bigram, text, token="ngrams", n=2)
+
+bigram.pos.count <- count(bigram.pos, bigram, sort=TRUE)
+bigram.pos.count <- bigram.pos.count[-1,]
+bigram.pos.count <- head(bigram.pos.count, 20)
+
+bigram.pos.sep <- separate(bigram.pos, bigram, c("word1", "word2"), sep=" ")
+bigram.pos.fil <- bigram.pos.sep %>%
+  filter(!word1 %in% stop_words$word) %>%
+  filter(!word2 %in% stop_words$word)
+bigram.pos.tbl <- count(bigram.pos.fil, word1, word2, sort=TRUE)
+bigram.pos.tbl$bigramr <- paste(bigram.pos.tbl$word1, bigram.pos.tbl$word2, sep=" ")
+bigram.pos.tbl <- bigram.pos.tbl[-1,]
+bigram.pos.tbl <- head(bigram.pos.tbl, 20)
+
+p.bigram.pos1 <- ggplot(bigram.pos.count, aes(x=reorder(bigram, n), y=n, group=1)) +
+  geom_bar(stat="identity") +
+  labs(title="In your organisation,\nwhat motivates you to learn?",
+       y="Frequency",
+       x="Bigram") +
+  theme_bw() +
+  theme(plot.title=element_text(hjust=0.5)) +
+  coord_flip()
+p.bigram.pos1
+
+p.bigram.pos2 <- ggplot(bigram.pos.tbl, aes(x=reorder(bigramr, n), y=n, group=1)) +
+  geom_bar(stat="identity") +
+  labs(title="In your organisation,\nwhat motivates you to learn?",
+       y="Frequency",
+       x="Bigram") +
+  theme_bw() +
+  theme(plot.title=element_text(hjust=0.5)) +
+  coord_flip()
+p.bigram.pos2
+
+# --------------------------------------
+# ----- Trigrams -----------------------
+# --------------------------------------
+
+trigram.pos <- unnest_tokens(data.tm.pos, trigram, text, token="ngrams", n=3)
+
+trigram.pos.count <- count(trigram.pos, trigram, sort=TRUE)
+trigram.pos.count <- trigram.pos.count[-1,]
+trigram.pos.count <- head(trigram.pos.count, 20)
+
+trigram.pos.sep <- separate(trigram.pos, trigram, c("word1", "word2", "word3"), sep=" ")
+trigram.pos.fil <- trigram.pos.sep %>%
+  filter(!word1 %in% stop_words$word) %>%
+  filter(!word2 %in% stop_words$word) %>%
+  filter(!word3 %in% stop_words$word)
+trigram.pos.tbl <- count(trigram.pos.fil, word1, word2, word3, sort=TRUE)
+trigram.pos.tbl$trigramr <- paste(trigram.pos.tbl$word1, trigram.pos.tbl$word2, trigram.pos.tbl$word3, sep=" ")
+trigram.pos.tbl <- trigram.pos.tbl[-1,]
+trigram.pos.tbl <- head(trigram.pos.tbl, 20)
+
+p.trigram.pos1 <- ggplot(trigram.pos.count, aes(x=reorder(trigram, n), y=n, group=1)) +
+  geom_bar(stat="identity") +
+  labs(title="In your organisation,\nwhat motivates you to learn?",
+       y="Frequency",
+       x="Trigram") +
+  theme_bw() +
+  theme(plot.title=element_text(hjust=0.5)) +
+  coord_flip()
+p.trigram.pos1
+
+p.trigram.pos2 <- ggplot(trigram.pos.tbl, aes(x=reorder(trigramr, n), y=n, group=1)) +
+  geom_bar(stat="identity") +
+  labs(title="In your organisation,\nwhat motivates you to learn?",
+       y="Frequency",
+       x="Trigram") +
+  theme_bw() +
+  theme(plot.title=element_text(hjust=0.5)) +
+  coord_flip()
+p.trigram.pos2
+
+# --------------------------------------
+# ----- Prepare Corpus -----------------
+# --------------------------------------
+
+corpus <-VCorpus(DataframeSource(data.tm.pos))
+corpus[[155]][1]
+
+corpus <- tm_map(corpus, content_transformer(tolower))
+corpus <- tm_map(corpus, removeNumbers)
+corpus <- tm_map(corpus, removeWords, stopwords("english"))
+corpus <- tm_map(corpus, removeWords, c("na", "nil", "no comment", "no comments"))
+corpus <- tm_map(corpus, removePunctuation)
+corpus <- tm_map(corpus, stripWhitespace)
+corpus <- tm_map(corpus, stemDocument)
+corpus <- tm_map(corpus, lemmatize_strings)
+corpus <- tm_map(corpus, PlainTextDocument)
+corpus[[sample(1:nrow(data.tm), 1)]][1]
+
+# --------------------------------------
+# ----- Word Cloud ---------------------
+# --------------------------------------
+
+tdm <- TermDocumentMatrix(corpus)
+tdm <- as.matrix(tdm)
+frq <- sort(rowSums(tdm), decreasing=TRUE)
+dat <- data.frame(word=names(frq), freq=frq)
+head(dat, 50)
+
+set.seed(1234)
+
+wordcloud(words=dat$word, freq=dat$freq, min.freq=1, max.words=200, random.order=FALSE,
+          rot.per=0.35, colors=brewer.pal(5, "Dark2"))
+
+# --------------------------------------
+# ----- LDA ----------------------------
+# --------------------------------------
+
+dtm <- DocumentTermMatrix(corpus)
+rowTotals <- apply(dtm, 1, sum)
+dtm <- dtm[rowTotals > 0,]
+loglikelihood <- list()
+for (i in 2:50) {
+  model <- LDA(dtm, k=i, control=list(alpha=50/i, delta=0.1, seed=1234), method="Gibbs")
+  loglikelihood[[i]] <- logLik(model)
+}
+
+data.log <- as.data.frame(cbind(c(2:50), c(unlist(loglikelihood))))
+colnames(data.log) <- c("Topics", "Loglikelihood")
+
+p.log <- ggplot(data.log, aes(x=Topics, y=Loglikelihood, group=1)) +
+  geom_line() +
+  geom_point() +
+  labs(x="Number of Topics", y="Log-Likelihood") +
+  scale_x_continuous(breaks=seq(2, 50, by=2)) +
+  theme_bw(); p.log
+ggplotly(p.log)
+
+result <- FindTopicsNumber(dtm, topic = seq(from=2, to=50, by=1),
+                           metrics=c("Griffiths2004", "CaoJuan2009", "Arun2010", "Deveaud2014"),
+                           method="Gibbs", control=list(seed=1234), mc.cores=2L, verbose=TRUE)
+
+
+FindTopicsNumber_plot(result)
+
+# 10 Topics
+
+tm10 <- LDA(dtm, k=10, control=list(alpha=50/10, delta=0.1, seed=1234), method="Gibbs")
+beta10 <- tidy(tm10)
+gamma10 <- tidy(tm10, matrix="gamma")
+
+head(t.beta10)
+
+t.beta10 <- group_by(beta10, topic)
+t.beta10 <- top_n(t.beta10, 10, beta)
+t.beta10 <- ungroup(t.beta10)
+t.beta10 <- arrange(t.beta10, topic, -beta)
+
+p.beta10 <- ggplot(t.beta10, aes(x=reorder(term, beta), y=beta, fill=factor(topic))) +
+  geom_col() +
+  facet_wrap(~topic, scales="free") +
+  coord_flip() +
+  theme(legend.position="none")
+p.beta10
+
+data.tm10 <- dcast(gamma10, document~topic, value.var="gamma")
+data.tm10 <- merge(x=data, y=data.tm10, by.x="ID", by.y="document", all.x=TRUE)
+
+# 11 Topics
+
+tm11 <- LDA(dtm, k=11, control=list(alpha=50/11, delta=0.1, seed=1234), method="Gibbs")
+beta11 <- tidy(tm11)
+gamma11 <- tidy(tm11, matrix="gamma")
+
+head(t.beta11)
+
+t.beta11 <- group_by(beta11, topic)
+t.beta11 <- top_n(t.beta11, 11, beta)
+t.beta11 <- ungroup(t.beta11)
+t.beta11 <- arrange(t.beta11, topic, -beta)
+
+p.beta11 <- ggplot(t.beta11, aes(x=reorder(term, beta), y=beta, fill=factor(topic))) +
+  geom_col() +
+  facet_wrap(~topic, scales="free") +
+  coord_flip() +
+  theme(legend.position="none")
+p.beta11
+
+data.tm11 <- dcast(gamma11, document~topic, value.var="gamma")
+data.tm11 <- merge(x=data, y=data.tm11, by.x="ID", by.y="document", all.x=TRUE)
+
+# ------------------------------------------------------------------------------
+# ---------- Text Analysis (Negative) ------------------------------------------
+# ------------------------------------------------------------------------------
+
+library(readxl)
+library(tm)
+library(topicmodels)
+library(wordcloud)
+library(tidytext)
+library(ldatuning)
+library(data.table)
+library(ggplot2)
+library(plotly)
+library(dplyr)
+library(Hmisc)
+
+data.tm.neg <- subset(data, select=c(ID, QLT2))
+data.tm.neg$QLT2 <- iconv(data.tm.neg$QLT2, from="UTF-8", to="ASCII//TRANSLIT")
+data.tm.neg <- na.omit(data.tm.neg)
+colnames(data.tm.neg) <-c("doc_id", "text")
+
+head(data.tm.neg)
+dim(data.tm.neg)
+
+# --------------------------------------
+# ----- Bigrams ------------------------
+# --------------------------------------
+
+bigram.neg <- unnest_tokens(data.tm.neg, bigram, text, token="ngrams", n=2)
+
+bigram.neg.count <- count(bigram.neg, bigram, sort=TRUE)
+bigram.neg.count <- bigram.neg.count[-1,]
+bigram.neg.count <- head(bigram.neg.count, 20)
+
+bigram.neg.sep <- separate(bigram.neg, bigram, c("word1", "word2"), sep=" ")
+bigram.neg.fil <- bigram.neg.sep %>%
+  filter(!word1 %in% stop_words$word) %>%
+  filter(!word2 %in% stop_words$word)
+bigram.neg.tbl <- count(bigram.neg.fil, word1, word2, sort=TRUE)
+bigram.neg.tbl$bigramr <- paste(bigram.neg.tbl$word1, bigram.neg.tbl$word2, sep=" ")
+bigram.neg.tbl <- bigram.neg.tbl[-1,]
+bigram.neg.tbl <- head(bigram.neg.tbl, 20)
+
+p.bigram.neg1 <- ggplot(bigram.neg.count, aes(x=reorder(bigram, n), y=n, group=1)) +
+  geom_bar(stat="identity") +
+  labs(title="In your organisation,\nwhat hinders you from learning?",
+       y="Frequency",
+       x="Bigram") +
+  theme_bw() +
+  theme(plot.title=element_text(hjust=0.5)) +
+  coord_flip()
+p.bigram.neg1
+
+p.bigram.neg2 <- ggplot(bigram.neg.tbl, aes(x=reorder(bigramr, n), y=n, group=1)) +
+  geom_bar(stat="identity") +
+  labs(title="In your organisation,\nwhat hinders you from learning?",
+       y="Frequency",
+       x="Bigram") +
+  theme_bw() +
+  theme(plot.title=element_text(hjust=0.5)) +
+  coord_flip()
+p.bigram.neg2
+
+# --------------------------------------
+# ----- Trigrams -----------------------
+# --------------------------------------
+
+trigram.neg <- unnest_tokens(data.tm.neg, trigram, text, token="ngrams", n=3)
+
+trigram.neg.count <- count(trigram.neg, trigram, sort=TRUE)
+trigram.neg.count <- trigram.neg.count[-1,]
+trigram.neg.count <- head(trigram.neg.count, 20)
+
+trigram.neg.sep <- separate(trigram.neg, trigram, c("word1", "word2", "word3"), sep=" ")
+trigram.neg.fil <- trigram.neg.sep %>%
+  filter(!word1 %in% stop_words$word) %>%
+  filter(!word2 %in% stop_words$word) %>%
+  filter(!word3 %in% stop_words$word)
+trigram.neg.tbl <- count(trigram.neg.fil, word1, word2, word3, sort=TRUE)
+trigram.neg.tbl$trigramr <- paste(trigram.neg.tbl$word1, trigram.neg.tbl$word2, trigram.neg.tbl$word3, sep=" ")
+trigram.neg.tbl <- trigram.neg.tbl[-1,]
+trigram.neg.tbl <- head(trigram.neg.tbl, 20)
+
+p.trigram.neg1 <- ggplot(trigram.neg.count, aes(x=reorder(trigram, n), y=n, group=1)) +
+  geom_bar(stat="identity") +
+  labs(title="In your organisation,\nwhat hinders you from learning?",
+       y="Frequency",
+       x="Trigram") +
+  theme_bw() +
+  theme(plot.title=element_text(hjust=0.5)) +
+  coord_flip()
+p.trigram.neg1
+
+p.trigram.neg2 <- ggplot(trigram.neg.tbl, aes(x=reorder(trigramr, n), y=n, group=1)) +
+  geom_bar(stat="identity") +
+  labs(title="In your organisation,\nwhat hinders you from learning?",
+       y="Frequency",
+       x="Trigram") +
+  theme_bw() +
+  theme(plot.title=element_text(hjust=0.5)) +
+  coord_flip()
+p.trigram.neg2
+
+# --------------------------------------
+# ----- Prepare Corpus -----------------
+# --------------------------------------
+
+corpus <-VCorpus(DataframeSource(data.tm.neg))
+corpus[[155]][1]
+
+corpus <- tm_map(corpus, content_transformer(tolower))
+corpus <- tm_map(corpus, removeNumbers)
+corpus <- tm_map(corpus, removeWords, stopwords("english"))
+corpus <- tm_map(corpus, removeWords, c("na", "nil", "no comment", "no comments"))
+corpus <- tm_map(corpus, removePunctuation)
+corpus <- tm_map(corpus, stripWhitespace)
+# corpus <- tm_map(corpus, stemDocument)
+corpus[[sample(1:nrow(data.tm), 1)]][1]
+
+# --------------------------------------
+# ----- Word Cloud ---------------------
+# --------------------------------------
+
+tdm <- TermDocumentMatrix(corpus)
+tdm <- as.matrix(tdm)
+frq <- sort(rowSums(tdm), decreasing=TRUE)
+dat <- data.frame(word=names(frq), freq=frq)
+head(dat, 50)
+
+set.seed(1234)
+
+wordcloud(words=dat$word, freq=dat$freq, min.freq=1, max.words=200, random.order=FALSE,
+          rot.per=0.35, colors=brewer.pal(20, "Dark2"))
+
+# --------------------------------------
+# ----- LDA ----------------------------
+# --------------------------------------
+
+dtm <- DocumentTermMatrix(corpus)
+rowTotals <- apply(dtm, 1, sum)
+dtm <- dtm[rowTotals > 0,]
+loglikelihood <- list()
+for (i in 2:50) {
+  model <- LDA(dtm, k=i, control=list(alpha=50/i, delta=0.1, seed=1234), method="Gibbs")
+  loglikelihood[[i]] <- logLik(model)
+}
+
+data.log <- as.data.frame(cbind(c(2:50), c(unlist(loglikelihood))))
+colnames(data.log) <- c("Topics", "Loglikelihood")
+
+p.log <- ggplot(data.log, aes(x=Topics, y=Loglikelihood, group=1)) +
+  geom_line() +
+  geom_point() +
+  labs(x="Number of Topics", y="Log-Likelihood") +
+  scale_x_continuous(breaks=seq(2, 50, by=2)) +
+  theme_bw(); p.log
+ggplotly(p.log)
+
+result <- FindTopicsNumber(dtm, topic = seq(from=2, to=50, by=1),
+                           metrics=c("Griffiths2004", "CaoJuan2009", "Arun2010", "Deveaud2014"),
+                           method="Gibbs", control=list(seed=1234), mc.cores=2L, verbose=TRUE)
+
+FindTopicsNumber_plot(result)
+
+# 11 Topics
+
+tm11 <- LDA(dtm, k=11, control=list(alpha=50/11, delta=0.1, seed=1234), method="Gibbs")
+beta11 <- tidy(tm11)
+gamma11 <- tidy(tm11, matrix="gamma")
+
+t.beta11 <- beta11 %>%
+  group_by(topic) %>%
+  top_n(10, beta) %>%
+  ungroup() %>%
+  arrange(topic, -beta)
+p.beta11 <- t.beta11 %>%
+  mutate(term=reorder(term, beta)) %>%
+  ggplot(aes(term, beta, fill=factor(topic))) +
+  geom_col(show.legend=FALSE) +
+  facet_wrap(~topic, scales="free") +
+  coord_flip(); p.beta11
+
+data.tm11 <- dcast(gamma11, document~topic, value.var="gamma")
+data.tm11 <- merge(x=data, y=data.tm11, by.x="ID", by.y="document", all.x=TRUE)
