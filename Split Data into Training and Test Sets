@@ -1,0 +1,7 @@
+library(caret)
+
+set.seed(1234)
+
+partition <- createDataPartition(y=1:nrow(data), times=1, p=0.7, list=FALSE)
+data.train <- data[partition,]
+data.test <- data[-partition,]
