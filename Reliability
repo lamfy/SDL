@@ -1,0 +1,63 @@
+# ------------------------------------------------------------------------------
+# ---------- Cronbach's Alpha --------------------------------------------------
+# ------------------------------------------------------------------------------
+
+library(psych)
+
+# --------------------------------------
+# ----- SDL ----------------------------
+# --------------------------------------
+
+alpha.sdlt <- alpha(cor_auto(data[,2:17])); alpha.sdlt$total$raw_alpha # 0.9540065
+
+# --------------------------------------
+# ----- DLOQ ---------------------------
+# --------------------------------------
+
+alpha.dlo1 <- alpha(cor_auto(data[,18:20])); alpha.dlo1$total$raw_alpha # 0.8652155
+alpha.dlo2 <- alpha(cor_auto(data[,21:23])); alpha.dlo2$total$raw_alpha # 0.9393316
+alpha.dlo3 <- alpha(cor_auto(data[,24:26])); alpha.dlo3$total$raw_alpha # 0.9355212
+alpha.dlo4 <- alpha(cor_auto(data[,27:29])); alpha.dlo4$total$raw_alpha # 0.8953603
+alpha.dlo5 <- alpha(cor_auto(data[,30:32])); alpha.dlo5$total$raw_alpha # 0.9282506
+alpha.dlo6 <- alpha(cor_auto(data[,33:35])); alpha.dlo6$total$raw_alpha # 0.9115811
+alpha.dlo7 <- alpha(cor_auto(data[,36:38])); alpha.dlo7$total$raw_alpha # 0.9424465
+
+# ------------------------------------------------------------------------------
+# ---------- Composite Reliability ---------------------------------------------
+# ------------------------------------------------------------------------------
+
+# --------------------------------------
+# ----- SDL ----------------------------
+# --------------------------------------
+
+std.sdlt <- standardizedSolution(fit.sdlt); std.sdlt <- std.sdlt$est.std[std.sdlt$op=="=~"]
+res.sdlt <- 1 - (std.sdlt) ^ 2
+cpr.sdlt <- sum(std.sdlt)^2/((sum(std.sdlt)^2) + sum(res.sdlt)); cpr.sdlt # 0.9417708
+
+# --------------------------------------
+# ----- DLOQ ---------------------------
+# --------------------------------------
+
+std.dlt1 <- standardizedSolution(fit.dlt1); std.dlt1 <- std.dlt1$est.std[std.dlt1$op=="=~"]
+std.dlt2 <- standardizedSolution(fit.dlt2); std.dlt2 <- std.dlt2$est.std[std.dlt2$op=="=~"]
+std.dlt3 <- standardizedSolution(fit.dlt3); std.dlt3 <- std.dlt3$est.std[std.dlt3$op=="=~"]
+std.dlt4 <- standardizedSolution(fit.dlt4); std.dlt4 <- std.dlt4$est.std[std.dlt4$op=="=~"]
+std.dlt5 <- standardizedSolution(fit.dlt5); std.dlt5 <- std.dlt5$est.std[std.dlt5$op=="=~"]
+std.dlt6 <- standardizedSolution(fit.dlt6); std.dlt6 <- std.dlt6$est.std[std.dlt6$op=="=~"]
+std.dlt7 <- standardizedSolution(fit.dlt7); std.dlt7 <- std.dlt7$est.std[std.dlt7$op=="=~"]
+
+res.dlt1 <- 1 - (std.dlt1) ^ 2
+res.dlt2 <- 1 - (std.dlt2) ^ 2
+res.dlt3 <- 1 - (std.dlt3) ^ 2
+res.dlt4 <- 1 - (std.dlt4) ^ 2
+res.dlt5 <- 1 - (std.dlt5) ^ 2
+res.dlt6 <- 1 - (std.dlt6) ^ 2
+res.dlt7 <- 1 - (std.dlt7) ^ 2
+
+cpr.dlt1 <- sum(std.dlt1)^2/((sum(std.dlt1)^2) + sum(res.dlt1)); cpr.dlt1 # 0.841971
+cpr.dlt2 <- sum(std.dlt2)^2/((sum(std.dlt2)^2) + sum(res.dlt2)); cpr.dlt2 # 0.9196667
+cpr.dlt3 <- sum(std.dlt3)^2/((sum(std.dlt3)^2) + sum(res.dlt3)); cpr.dlt3 # 0.9172672
+cpr.dlt4 <- sum(std.dlt4)^2/((sum(std.dlt4)^2) + sum(res.dlt4)); cpr.dlt4 # 0.8731887
+cpr.dlt5 <- sum(std.dlt5)^2/((sum(std.dlt5)^2) + sum(res.dlt5)); cpr.dlt5 # 0.9085287
+cpr.dlt6 <- sum(std.dlt6)^2/((sum(std.dlt6)^2) + sum(res.dlt6)); cpr.dlt6 # 0.8912397
+cpr.dlt7 <- sum(std.dlt7)^2/((sum(std.dlt7)^2) + sum(res.dlt7)); cpr.dlt7 # 0.9259439
