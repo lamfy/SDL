@@ -1,0 +1,2455 @@
+---
+title: "Self-Directed Learning Study"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    vertical_layout: scroll
+    theme: journal
+---
+
+<style>
+
+body {
+color: black;
+text-align: justify;
+}
+
+</style>
+
+```{r setup, include=FALSE}
+
+library(flexdashboard)
+
+################################################################################
+#                                                                              #
+#                   Self-Directed Learning (SDL) Project                       #
+#                                                                              #
+################################################################################
+
+# ------------------------------------------------------------------------------
+# ---------- Table of Contents -------------------------------------------------
+# ------------------------------------------------------------------------------
+
+# ------------------------------------------------------------------------------
+# ---------- Load and Manipulate Data ------------------------------------------
+# ------------------------------------------------------------------------------
+
+library(readxl) # For loading data
+library(readr) # For parse_number
+library(xlsx) # For write.xlsx
+
+library(ggplot2)
+library(ggthemes)
+library(plotly)
+library(gridExtra)
+
+library(tm)
+library(topicmodels)
+library(wordcloud)
+library(tidytext)
+library(ldatuning)
+library(data.table)
+library(ggplot2)
+library(plotly)
+library(dplyr)
+library(Hmisc)
+library(tidyr)
+library(knitr)
+
+library(igraph)
+library(ggraph)
+library(bootnet)
+library(qgraph)
+
+setwd("~/SDL2019"); dir() # Set working directory
+
+data.psst <- read_excel("190527_sdl_psst.xlsx")
+data.psst <- data.psst[,1:77]
+colnames(data.psst) <- c("ID", 
+                         "SDL1", "SDL2", "SDL3", "SDL4", "SDL5",
+                         "SDL6", "SDL7", "SDL8", "SDL9", "SDL10",
+                         "SDL11", "SDL12", "SDL13", "SDL14", "SDL15",
+                         "SDL16",
+                         "DLO1", "DLO2", "DLO3", "DLO4", "DLO5",
+                         "DLO6", "DLO7", "DLO8", "DLO9", "DLO10",
+                         "DLO11", "DLO12", "DLO13", "DLO14", "DLO15",
+                         "DLO16", "DLO17", "DLO18", "DLO19", "DLO20",
+                         "DLO21",
+                         "QLT1", "QLT2",
+                         "AGN", "AGN_OTH",
+                         "JBF1", "JBF2", "JBF3", "JBF4", "JBF5",
+                         "JBF6", "JBF7", "JBF8", "JBF9", "JBF10",
+                         "JBF11", "JBF12", "JBF13", "JBF14", "JBF15",
+                         "JBF16", "JBF17", "JBF18", "JBF19", "JBF20",
+                         "JBF21", "JBF22", "JBF23", "JBF24", "JBF25",
+                         "JBF26", "JBF27", "JBF28", "JBF29",
+                         "JBN", "DES", "SEX", "AGE", "SVC", "FDB")
+data.psst <- subset(data.psst, select=c(ID, 
+                                        SDL1, SDL2, SDL3, SDL4, SDL5,
+                                        SDL6, SDL7, SDL8, SDL9, SDL10,
+                                        SDL11, SDL12, SDL13, SDL14, SDL15,
+                                        SDL16,
+                                        DLO1, DLO2, DLO3, DLO4, DLO5,
+                                        DLO6, DLO7, DLO8, DLO9, DLO10,
+                                        DLO11, DLO12, DLO13, DLO14, DLO15,
+                                        DLO16, DLO17, DLO18, DLO19, DLO20,
+                                        DLO21,
+                                        QLT1, QLT2,
+                                        AGN, AGN_OTH,
+                                        JBN, DES, SEX, AGE, SVC, FDB))
+
+data.fmsg <- read_excel("190527_sdl_formsg.xlsx")
+data.fmsg <- data.fmsg[,-2]
+colnames(data.fmsg) <- c("ID", 
+                         "SDL1", "SDL2", "SDL3", "SDL4", "SDL5",
+                         "SDL6", "SDL7", "SDL8", "SDL9", "SDL10",
+                         "SDL11", "SDL12", "SDL13", "SDL14", "SDL15",
+                         "SDL16",
+                         "DLO1", "DLO2", "DLO3", "DLO4", "DLO5",
+                         "DLO6", "DLO7", "DLO8", "DLO9", "DLO10",
+                         "DLO11", "DLO12", "DLO13", "DLO14", "DLO15",
+                         "DLO16", "DLO17", "DLO18", "DLO19", "DLO20",
+                         "DLO21",
+                         "QLT1", "QLT2",
+                         "AGN", "AGN_OTH",
+                         "JBF", "JBN", "DES", "SEX", "AGE", 
+                         "SVC", "FDB")
+data.fmsg <- subset(data.fmsg, select=c(ID, 
+                                        SDL1, SDL2, SDL3, SDL4, SDL5,
+                                        SDL6, SDL7, SDL8, SDL9, SDL10,
+                                        SDL11, SDL12, SDL13, SDL14, SDL15,
+                                        SDL16,
+                                        DLO1, DLO2, DLO3, DLO4, DLO5,
+                                        DLO6, DLO7, DLO8, DLO9, DLO10,
+                                        DLO11, DLO12, DLO13, DLO14, DLO15,
+                                        DLO16, DLO17, DLO18, DLO19, DLO20,
+                                        DLO21,
+                                        QLT1, QLT2,
+                                        AGN, AGN_OTH,
+                                        JBN, DES, SEX, AGE, 
+                                        SVC, FDB))
+
+data <- as.data.frame(rbind(data.psst, data.fmsg))
+
+data$SDL1 <- parse_number(data$SDL1, na=c("NA"))
+data$SDL2 <- parse_number(data$SDL2, na=c("NA"))
+data$SDL3 <- parse_number(data$SDL3, na=c("NA"))
+data$SDL4 <- parse_number(data$SDL4, na=c("NA"))
+data$SDL5 <- parse_number(data$SDL5, na=c("NA"))
+data$SDL6 <- parse_number(data$SDL6, na=c("NA"))
+data$SDL7 <- parse_number(data$SDL7, na=c("NA"))
+data$SDL8 <- parse_number(data$SDL8, na=c("NA"))
+data$SDL9 <- parse_number(data$SDL9, na=c("NA"))
+data$SDL10 <- parse_number(data$SDL10, na=c("NA"))
+data$SDL11 <- parse_number(data$SDL11, na=c("NA"))
+data$SDL12 <- parse_number(data$SDL12, na=c("NA"))
+data$SDL13 <- parse_number(data$SDL13, na=c("NA"))
+data$SDL14 <- parse_number(data$SDL14, na=c("NA"))
+data$SDL15 <- parse_number(data$SDL15, na=c("NA"))
+data$SDL16 <- parse_number(data$SDL16, na=c("NA"))
+
+data$DLO1 <- parse_number(data$DLO1, na=c("NA"))
+data$DLO2 <- parse_number(data$DLO2, na=c("NA"))
+data$DLO3 <- parse_number(data$DLO3, na=c("NA"))
+data$DLO4 <- parse_number(data$DLO4, na=c("NA"))
+data$DLO5 <- parse_number(data$DLO5, na=c("NA"))
+data$DLO6 <- parse_number(data$DLO6, na=c("NA"))
+data$DLO7 <- parse_number(data$DLO7, na=c("NA"))
+data$DLO8 <- parse_number(data$DLO8, na=c("NA"))
+data$DLO9 <- parse_number(data$DLO9, na=c("NA"))
+data$DLO10 <- parse_number(data$DLO10, na=c("NA"))
+data$DLO11 <- parse_number(data$DLO11, na=c("NA"))
+data$DLO12 <- parse_number(data$DLO12, na=c("NA"))
+data$DLO13 <- parse_number(data$DLO13, na=c("NA"))
+data$DLO14 <- parse_number(data$DLO14, na=c("NA"))
+data$DLO15 <- parse_number(data$DLO15, na=c("NA"))
+data$DLO16 <- parse_number(data$DLO16, na=c("NA"))
+data$DLO17 <- parse_number(data$DLO17, na=c("NA"))
+data$DLO18 <- parse_number(data$DLO18, na=c("NA"))
+data$DLO19 <- parse_number(data$DLO19, na=c("NA"))
+data$DLO20 <- parse_number(data$DLO20, na=c("NA"))
+data$DLO21 <- parse_number(data$DLO21, na=c("NA"))
+
+data$SDLT <- rowMeans(data[,2:17], na.rm=TRUE)
+data$DLOT <- rowMeans(data[,18:38], na.rm=TRUE)
+data$DLT1 <- rowMeans(data[,18:20], na.rm=TRUE)
+data$DLT2 <- rowMeans(data[,21:23], na.rm=TRUE)
+data$DLT3 <- rowMeans(data[,24:26], na.rm=TRUE)
+data$DLT4 <- rowMeans(data[,27:29], na.rm=TRUE)
+data$DLT5 <- rowMeans(data[,30:32], na.rm=TRUE)
+data$DLT6 <- rowMeans(data[,33:35], na.rm=TRUE)
+data$DLT7 <- rowMeans(data[,36:38], na.rm=TRUE)
+
+data$DESR <- data$DES
+data$DESR[data$DESR=="Manager"] <- "Supervisor"
+data$DESR[data$DESR=="Middle Management"] <- "Supervisor"
+data$DESR[data$DESR=="Senior Management"] <- "Supervisor"
+data$DESR[data$DESR=="Senior Officer"] <- "Supervisee"
+data$DESR[data$DESR=="Support Officer"] <- "Supervisee"
+
+data$DES <- factor(data$DES, levels=c("Support Officer",
+                                      "Senior Officer",
+                                      "Senior Management",
+                                      "Middle Management",
+                                      "Manager"))
+
+data$AGER <- data$AGE
+data$AGER[data$AGER=="25 years old or below" | data$AGER=="26 - 30 years old"] <- "20s"
+data$AGER[data$AGER=="31 - 35 years old" | data$AGER=="36 - 40 years old"] <- "30s"
+data$AGER[data$AGER=="41 - 45 years old" | data$AGER=="46 - 50 years old"] <- "40s"
+
+data$SEX[data$SEX=="Others"] <- NA
+
+AGN_Split1 <- strsplit(data$AGN, " -")
+AGNR1 <- list()
+for(i in 1:nrow(data)) {
+  AGNR1[i] <- AGN_Split1[[i]][1]
+}
+AGNR1 <- unlist(AGNR1)
+AGN_Split2 <- strsplit(AGNR1, " \\(")
+AGNR <- list()
+for(i in 1:nrow(data)) {
+  AGNR[i] <- AGN_Split2[[i]][1]
+}
+AGNR <- unlist(AGNR)
+data$AGNR <- AGNR
+
+data$lacktime <- data$QLT2
+data$lacktime <- ifelse(is.na(data$QLT2)==TRUE, NA,
+                 ifelse(grepl("time", tolower(data$QLT2))==TRUE, 1, 0))
+data$lacktime <- factor(data$lacktime, levels=0:1, labels=c("Absent", "Present"))
+
+data <- data[!is.na(data$DLO21),]
+
+data.tm.pos <- subset(data, select=c(ID, QLT1))
+data.tm.pos$QLT1 <- iconv(data.tm.pos$QLT1, from="UTF-8", to="ASCII//TRANSLIT")
+data.tm.pos <- na.omit(data.tm.pos)
+colnames(data.tm.pos) <-c("doc_id", "text")
+
+data.tm.neg <- subset(data, select=c(ID, QLT2))
+data.tm.neg$QLT2 <- iconv(data.tm.neg$QLT2, from="UTF-8", to="ASCII//TRANSLIT")
+data.tm.neg <- na.omit(data.tm.neg)
+colnames(data.tm.neg) <-c("doc_id", "text")
+
+```
+
+DEMO
+=======================================================================
+
+Row
+-----------------------------------------------------------------------
+
+### Gender
+
+```{r}
+
+dem.sex <- as.data.frame(table(data$SEX))
+colnames(dem.sex) <- c("Category", "Total")
+kable(dem.sex)
+
+```
+
+### Age
+
+```{r}
+
+dem.age <- as.data.frame(table(data$AGE))
+colnames(dem.age) <- c("Category", "Total")
+kable(dem.age)
+
+```
+
+### Designation
+
+```{r}
+
+dem.des <- as.data.frame(table(data$DES))
+colnames(dem.des) <- c("Category", "Total")
+kable(dem.des)
+
+```
+
+Row
+-----------------------------------------------------------------------
+
+### Agency
+
+```{r}
+
+dem.agn <- as.data.frame(table(data$AGNR))
+colnames(dem.agn) <- c("Category", "Total")
+kable(dem.agn)
+
+```
+
+SDL
+=======================================================================
+
+Row
+-----------------------------------------------------------------------
+
+### Total
+
+```{r}
+ggplotly(
+ggplot(data, aes(x=SDLT)) +
+  geom_histogram(fill="#FF6666", color="black", binwidth=0.1) +
+  geom_vline(aes(xintercept=mean(data$SDLT), color="Singapore (4.68)"), linetype="solid") +
+  geom_vline(aes(xintercept=4.668, color="Belgium (4.67)"), linetype="dashed") +
+  scale_color_manual(name="", values=c(`Singapore (4.68)`="red", `Belgium (4.67)`="Blue")) +
+  labs(x="\nSelf-Directed Learning", y="Total\n") +
+  coord_cartesian(xlim=c(1,6)) +
+  scale_x_continuous(breaks=seq(1,6,1)) +
+  theme_bw() +
+  theme(axis.title.x=element_text(color="black"),
+        axis.title.y=element_text(color="black"),
+        axis.text.x=element_text(color="black"),
+        axis.text.y=element_text(color="black"),
+        axis.line=element_line(size=1, colour = "black"),
+        panel.border=element_rect(size=1, color="black", fill=NA), 
+        panel.background=element_blank()))
+
+```
+
+Row
+-----------------------------------------------------------------------
+
+### Gender
+
+```{r}
+
+ggplotly(ggplot(data[!is.na(data$SEX),], aes(x=SEX, y=SDLT, fill=SEX)) +
+  geom_bar(stat="summary", fun.y="mean") +
+  labs(y="\nSelf-Directed Learning") +
+  theme_bw() +
+  theme(legend.position="none",
+        axis.title.y=element_blank(),
+        axis.title.x=element_text(color="black"),
+        axis.text.x=element_text(color="black"),
+        axis.text.y=element_text(color="black"),
+        axis.line=element_line(size=1, colour = "black"),
+        panel.border=element_rect(size=1, color="black", fill=NA), 
+        panel.background=element_blank()) +
+  coord_flip())
+
+```
+
+### Age
+
+```{r}
+
+ggplotly(ggplot(data[!is.na(data$AGE),], aes(x=AGE, y=SDLT, fill=AGE)) +
+  geom_bar(stat="summary", fun.y="mean") +
+  labs(y="\nSelf-Directed Learning") +
+  theme_bw() +
+  theme(legend.position="none",
+        axis.title.y=element_blank(),
+        axis.title.x=element_text(color="black"),
+        axis.text.x=element_text(color="black"),
+        axis.text.y=element_text(color="black"),
+        axis.line=element_line(size=1, colour = "black"),
+        panel.border=element_rect(size=1, color="black", fill=NA), 
+        panel.background=element_blank()) +
+  coord_flip())
+
+```
+
+### Designation
+
+```{r}
+
+ggplotly(ggplot(data[!is.na(data$DES),], aes(x=DES, y=SDLT, fill=DES)) +
+  geom_bar(stat="summary", fun.y="mean") +
+  labs(y="\nSelf-Directed Learning") +
+  theme_bw() +
+  theme(legend.position="none",
+        axis.title.y=element_blank(),
+        axis.title.x=element_text(color="black"),
+        axis.text.x=element_text(color="black"),
+        axis.text.y=element_text(color="black"),
+        axis.line=element_line(size=1, colour = "black"),
+        panel.border=element_rect(size=1, color="black", fill=NA), 
+        panel.background=element_blank()) +
+  coord_flip())
+
+```
+
+Row {.tabset}
+-----------------------------------------------------------------------
+
+### SDL Item 4
+
+```{r}
+
+ggplotly(ggplot(data[!is.na(data$AGE),], aes(x=AGE, y=SDL4, fill=AGE)) +
+  geom_bar(stat="summary", fun.y="mean") +
+  labs(y="\nSDL Item 4") +
+  theme_bw() +
+  theme(legend.position="none",
+        axis.title.y=element_blank(),
+        axis.title.x=element_text(color="black"),
+        axis.text.x=element_text(color="black"),
+        axis.text.y=element_text(color="black"),
+        axis.line=element_line(size=1, colour = "black"),
+        panel.border=element_rect(size=1, color="black", fill=NA), 
+        panel.background=element_blank()) +
+  coord_flip())
+
+```
+
+### SDL Item 5
+
+```{r}
+
+ggplotly(ggplot(data[!is.na(data$AGE),], aes(x=AGE, y=SDL5, fill=AGE)) +
+  geom_bar(stat="summary", fun.y="mean") +
+  labs(y="\nSDL Item 5") +
+  theme_bw() +
+  theme(legend.position="none",
+        axis.title.y=element_blank(),
+        axis.title.x=element_text(color="black"),
+        axis.text.x=element_text(color="black"),
+        axis.text.y=element_text(color="black"),
+        axis.line=element_line(size=1, colour = "black"),
+        panel.border=element_rect(size=1, color="black", fill=NA), 
+        panel.background=element_blank()) +
+  coord_flip())
+
+```
+
+### SDL Item 10
+
+```{r}
+
+ggplotly(ggplot(data[!is.na(data$AGE),], aes(x=AGE, y=SDL10, fill=AGE)) +
+  geom_bar(stat="summary", fun.y="mean") +
+  labs(y="\nSDL Item 10") +
+  theme_bw() +
+  theme(legend.position="none",
+        axis.title.y=element_blank(),
+        axis.title.x=element_text(color="black"),
+        axis.text.x=element_text(color="black"),
+        axis.text.y=element_text(color="black"),
+        axis.line=element_line(size=1, colour = "black"),
+        panel.border=element_rect(size=1, color="black", fill=NA), 
+        panel.background=element_blank()) +
+  coord_flip())
+
+```
+
+### SDL Item 11
+
+```{r}
+
+ggplotly(ggplot(data[!is.na(data$AGE),], aes(x=AGE, y=SDL11, fill=AGE)) +
+  geom_bar(stat="summary", fun.y="mean") +
+  labs(y="\nSDL Item 11") +
+  theme_bw() +
+  theme(legend.position="none",
+        axis.title.y=element_blank(),
+        axis.title.x=element_text(color="black"),
+        axis.text.x=element_text(color="black"),
+        axis.text.y=element_text(color="black"),
+        axis.line=element_line(size=1, colour = "black"),
+        panel.border=element_rect(size=1, color="black", fill=NA), 
+        panel.background=element_blank()) +
+  coord_flip())
+
+```
+
+### SDL Item 13
+
+```{r}
+
+ggplotly(ggplot(data[!is.na(data$AGE),], aes(x=AGE, y=SDL13, fill=AGE)) +
+  geom_bar(stat="summary", fun.y="mean") +
+  labs(y="\nSDL Item 13") +
+  theme_bw() +
+  theme(legend.position="none",
+        axis.title.y=element_blank(),
+        axis.title.x=element_text(color="black"),
+        axis.text.x=element_text(color="black"),
+        axis.text.y=element_text(color="black"),
+        axis.line=element_line(size=1, colour = "black"),
+        panel.border=element_rect(size=1, color="black", fill=NA), 
+        panel.background=element_blank()) +
+  coord_flip())
+
+```
+
+### SDL Item 14
+
+```{r}
+
+ggplotly(ggplot(data[!is.na(data$AGE),], aes(x=AGE, y=SDL14, fill=AGE)) +
+  geom_bar(stat="summary", fun.y="mean") +
+  labs(y="\nSDL Item 14") +
+  theme_bw() +
+  theme(legend.position="none",
+        axis.title.y=element_blank(),
+        axis.title.x=element_text(color="black"),
+        axis.text.x=element_text(color="black"),
+        axis.text.y=element_text(color="black"),
+        axis.line=element_line(size=1, colour = "black"),
+        panel.border=element_rect(size=1, color="black", fill=NA), 
+        panel.background=element_blank()) +
+  coord_flip())
+
+```
+
+### SDL Item 16
+
+```{r}
+
+ggplotly(ggplot(data[!is.na(data$AGE),], aes(x=AGE, y=SDL16, fill=AGE)) +
+  geom_bar(stat="summary", fun.y="mean") +
+  labs(y="\nSDL Item 16") +
+  theme_bw() +
+  theme(legend.position="none",
+        axis.title.y=element_blank(),
+        axis.title.x=element_text(color="black"),
+        axis.text.x=element_text(color="black"),
+        axis.text.y=element_text(color="black"),
+        axis.line=element_line(size=1, colour = "black"),
+        panel.border=element_rect(size=1, color="black", fill=NA), 
+        panel.background=element_blank()) +
+  coord_flip())
+
+```
+
+
+Row {.tabset}
+-----------------------------------------------------------------------
+
+### SDL Item 1
+
+```{r}
+
+ggplotly(ggplot(data[!is.na(data$DES),], aes(x=DES, y=SDL1, fill=DES)) +
+  geom_bar(stat="summary", fun.y="mean") +
+  labs(y="\nSDL Item 1") +
+  theme_bw() +
+  theme(legend.position="none",
+        axis.title.y=element_blank(),
+        axis.title.x=element_text(color="black"),
+        axis.text.x=element_text(color="black"),
+        axis.text.y=element_text(color="black"),
+        axis.line=element_line(size=1, colour = "black"),
+        panel.border=element_rect(size=1, color="black", fill=NA), 
+        panel.background=element_blank()) +
+  coord_flip())
+
+```
+
+### SDL Item 7
+
+```{r}
+
+ggplotly(ggplot(data[!is.na(data$DES),], aes(x=DES, y=SDL7, fill=DES)) +
+  geom_bar(stat="summary", fun.y="mean") +
+  labs(y="\nSDL Item 7") +
+  theme_bw() +
+  theme(legend.position="none",
+        axis.title.y=element_blank(),
+        axis.title.x=element_text(color="black"),
+        axis.text.x=element_text(color="black"),
+        axis.text.y=element_text(color="black"),
+        axis.line=element_line(size=1, colour = "black"),
+        panel.border=element_rect(size=1, color="black", fill=NA), 
+        panel.background=element_blank()) +
+  coord_flip())
+
+```
+
+### SDL Item 8
+
+```{r}
+
+ggplotly(ggplot(data[!is.na(data$DES),], aes(x=DES, y=SDL8, fill=DES)) +
+  geom_bar(stat="summary", fun.y="mean") +
+  labs(y="\nSDL Item 8") +
+  theme_bw() +
+  theme(legend.position="none",
+        axis.title.y=element_blank(),
+        axis.title.x=element_text(color="black"),
+        axis.text.x=element_text(color="black"),
+        axis.text.y=element_text(color="black"),
+        axis.line=element_line(size=1, colour = "black"),
+        panel.border=element_rect(size=1, color="black", fill=NA), 
+        panel.background=element_blank()) +
+  coord_flip())
+
+```
+
+### SDL Item 9
+
+```{r}
+
+ggplotly(ggplot(data[!is.na(data$DES),], aes(x=DES, y=SDL9, fill=DES)) +
+  geom_bar(stat="summary", fun.y="mean") +
+  labs(y="\nSDL Item 9") +
+  theme_bw() +
+  theme(legend.position="none",
+        axis.title.y=element_blank(),
+        axis.title.x=element_text(color="black"),
+        axis.text.x=element_text(color="black"),
+        axis.text.y=element_text(color="black"),
+        axis.line=element_line(size=1, colour = "black"),
+        panel.border=element_rect(size=1, color="black", fill=NA), 
+        panel.background=element_blank()) +
+  coord_flip())
+
+```
+
+Row
+-----------------------------------------------------------------------
+
+### Agency
+
+```{r}
+
+ggplotly(ggplot(data[!is.na(data$AGNR),], aes(x=AGNR, y=SDLT, fill=AGNR)) +
+  geom_bar(stat="summary", fun.y="mean") +
+  labs(y="\nSelf-Directed Learning") +
+  theme_bw() +
+  theme(axis.title.y=element_blank(),
+        axis.title.x=element_text(color="black"),
+        axis.text.x=element_text(color="black"),
+        axis.text.y=element_text(color="black"),
+        axis.line=element_line(size=1, colour = "black"),
+        legend.title=element_blank(),
+        panel.border=element_rect(size=1, color="black", fill=NA), 
+        panel.background=element_blank()) +
+  coord_flip())
+
+```
+
+LO
+=======================================================================
+
+Row {.tabset}
+-----------------------------------------------------------------------
+
+### Learning Organisation
+
+```{r}
+ggplotly(
+ggplot(data, aes(x=DLOT)) +
+  geom_histogram(fill="#FF6666", color="black", binwidth=0.5) +
+  labs(x="\nLearning Organisation", y="Total\n") +
+  coord_cartesian(xlim=c(1,6)) +
+  scale_x_continuous(breaks=seq(1,6,1)) +
+  theme_bw() +
+  theme(axis.title.x=element_text(color="black"),
+        axis.title.y=element_text(color="black"),
+        axis.text.x=element_text(color="black"),
+        axis.text.y=element_text(color="black"),
+        axis.line=element_line(size=1, colour = "black"),
+        panel.border=element_rect(size=1, color="black", fill=NA), 
+        panel.background=element_blank()))
+
+```
+
+### Continuous Learning
+
+```{r}
+ggplotly(
+ggplot(data, aes(x=DLT1)) +
+  geom_histogram(fill="#FF6666", color="black", binwidth=0.5) +
+  labs(x="\nContinuous Learning", y="Total\n") +
+  coord_cartesian(xlim=c(1,6)) +
+  scale_x_continuous(breaks=seq(1,6,1)) +
+  theme_bw() +
+  theme(axis.title.x=element_text(color="black"),
+        axis.title.y=element_text(color="black"),
+        axis.text.x=element_text(color="black"),
+        axis.text.y=element_text(color="black"),
+        axis.line=element_line(size=1, colour = "black"),
+        panel.border=element_rect(size=1, color="black", fill=NA), 
+        panel.background=element_blank()))
+
+```
+
+### Inquiry & Dialogue
+
+```{r}
+ggplotly(
+ggplot(data, aes(x=DLT2)) +
+  geom_histogram(fill="#FF6666", color="black", binwidth=0.5) +
+  labs(x="\nInquiry & Dialogue", y="Total\n") +
+  coord_cartesian(xlim=c(1,6)) +
+  scale_x_continuous(breaks=seq(1,6,1)) +
+  theme_bw() +
+  theme(axis.title.x=element_text(color="black"),
+        axis.title.y=element_text(color="black"),
+        axis.text.x=element_text(color="black"),
+        axis.text.y=element_text(color="black"),
+        axis.line=element_line(size=1, colour = "black"),
+        panel.border=element_rect(size=1, color="black", fill=NA), 
+        panel.background=element_blank()))
+
+```
+
+### Team Learning
+
+```{r}
+ggplotly(
+ggplot(data, aes(x=DLT3)) +
+  geom_histogram(fill="#FF6666", color="black", binwidth=0.5) +
+  labs(x="\nTeam Learning", y="Total\n") +
+  coord_cartesian(xlim=c(1,6)) +
+  scale_x_continuous(breaks=seq(1,6,1)) +
+  theme_bw() +
+  theme(axis.title.x=element_text(color="black"),
+        axis.title.y=element_text(color="black"),
+        axis.text.x=element_text(color="black"),
+        axis.text.y=element_text(color="black"),
+        axis.line=element_line(size=1, colour = "black"),
+        panel.border=element_rect(size=1, color="black", fill=NA), 
+        panel.background=element_blank()))
+
+```
+
+### Empowerment
+
+```{r}
+ggplotly(
+ggplot(data, aes(x=DLT4)) +
+  geom_histogram(fill="#FF6666", color="black", binwidth=0.5) +
+  labs(x="\nEmpowerment", y="Total\n") +
+  coord_cartesian(xlim=c(1,6)) +
+  scale_x_continuous(breaks=seq(1,6,1)) +
+  theme_bw() +
+  theme(axis.title.x=element_text(color="black"),
+        axis.title.y=element_text(color="black"),
+        axis.text.x=element_text(color="black"),
+        axis.text.y=element_text(color="black"),
+        axis.line=element_line(size=1, colour = "black"),
+        panel.border=element_rect(size=1, color="black", fill=NA), 
+        panel.background=element_blank()))
+
+```
+
+### Embedded System
+
+```{r}
+ggplotly(
+ggplot(data, aes(x=DLT5)) +
+  geom_histogram(fill="#FF6666", color="black", binwidth=0.5) +
+  labs(x="\nEmbedded System", y="Total\n") +
+  coord_cartesian(xlim=c(1,6)) +
+  scale_x_continuous(breaks=seq(1,6,1)) +
+  theme_bw() +
+  theme(axis.title.x=element_text(color="black"),
+        axis.title.y=element_text(color="black"),
+        axis.text.x=element_text(color="black"),
+        axis.text.y=element_text(color="black"),
+        axis.line=element_line(size=1, colour = "black"),
+        panel.border=element_rect(size=1, color="black", fill=NA), 
+        panel.background=element_blank()))
+
+```
+
+### System Connection
+
+```{r}
+ggplotly(
+ggplot(data, aes(x=DLT6)) +
+  geom_histogram(fill="#FF6666", color="black", binwidth=0.5) +
+  labs(x="\nSystem Connection", y="Total\n") +
+  coord_cartesian(xlim=c(1,6)) +
+  scale_x_continuous(breaks=seq(1,6,1)) +
+  theme_bw() +
+  theme(axis.title.x=element_text(color="black"),
+        axis.title.y=element_text(color="black"),
+        axis.text.x=element_text(color="black"),
+        axis.text.y=element_text(color="black"),
+        axis.line=element_line(size=1, colour = "black"),
+        panel.border=element_rect(size=1, color="black", fill=NA), 
+        panel.background=element_blank()))
+```
+
+### Strategic Leadership
+
+```{r}
+ggplotly(
+ggplot(data, aes(x=DLT7)) +
+  geom_histogram(fill="#FF6666", color="black", binwidth=0.5) +
+  labs(x="\nStrategic Leadership", y="Total\n") +
+  coord_cartesian(xlim=c(1,6)) +
+  scale_x_continuous(breaks=seq(1,6,1)) +
+  theme_bw() +
+  theme(axis.title.x=element_text(color="black"),
+        axis.title.y=element_text(color="black"),
+        axis.text.x=element_text(color="black"),
+        axis.text.y=element_text(color="black"),
+        axis.line=element_line(size=1, colour = "black"),
+        panel.border=element_rect(size=1, color="black", fill=NA), 
+        panel.background=element_blank()))
+```
+
+Gender {.tabset}
+-----------------------------------------------------------------------
+
+### Learning Organisation
+
+```{r}
+
+ggplotly(ggplot(data[!is.na(data$SEX),], aes(x=SEX, y=DLOT, fill=SEX)) +
+  geom_bar(stat="summary", fun.y="mean") +
+  labs(y="\nLearning Organisation") +
+  theme_bw() +
+  theme(legend.position="none",
+        axis.title.y=element_blank(),
+        axis.title.x=element_text(color="black"),
+        axis.text.x=element_text(color="black"),
+        axis.text.y=element_text(color="black"),
+        axis.line=element_line(size=1, colour = "black"),
+        panel.border=element_rect(size=1, color="black", fill=NA), 
+        panel.background=element_blank()) +
+  coord_flip())
+
+```
+
+### Continuous Learning
+
+```{r}
+
+ggplotly(ggplot(data[!is.na(data$SEX),], aes(x=SEX, y=DLT1, fill=SEX)) +
+  geom_bar(stat="summary", fun.y="mean") +
+  labs(y="\nContinuous Learning") +
+  theme_bw() +
+  theme(legend.position="none",
+        axis.title.y=element_blank(),
+        axis.title.x=element_text(color="black"),
+        axis.text.x=element_text(color="black"),
+        axis.text.y=element_text(color="black"),
+        axis.line=element_line(size=1, colour = "black"),
+        panel.border=element_rect(size=1, color="black", fill=NA), 
+        panel.background=element_blank()) +
+  coord_flip())
+
+```
+
+### Inquiry & Dialogue
+
+```{r}
+
+ggplotly(ggplot(data[!is.na(data$SEX),], aes(x=SEX, y=DLT2, fill=SEX)) +
+  geom_bar(stat="summary", fun.y="mean") +
+  labs(y="\nInquiry & Dialogue") +
+  theme_bw() +
+  theme(legend.position="none",
+        axis.title.y=element_blank(),
+        axis.title.x=element_text(color="black"),
+        axis.text.x=element_text(color="black"),
+        axis.text.y=element_text(color="black"),
+        axis.line=element_line(size=1, colour = "black"),
+        panel.border=element_rect(size=1, color="black", fill=NA), 
+        panel.background=element_blank()) +
+  coord_flip())
+
+```
+
+### Team Learning
+
+```{r}
+
+ggplotly(ggplot(data[!is.na(data$SEX),], aes(x=SEX, y=DLT3, fill=SEX)) +
+  geom_bar(stat="summary", fun.y="mean") +
+  labs(y="\nTeam Learning") +
+  theme_bw() +
+  theme(legend.position="none",
+        axis.title.y=element_blank(),
+        axis.title.x=element_text(color="black"),
+        axis.text.x=element_text(color="black"),
+        axis.text.y=element_text(color="black"),
+        axis.line=element_line(size=1, colour = "black"),
+        panel.border=element_rect(size=1, color="black", fill=NA), 
+        panel.background=element_blank()) +
+  coord_flip())
+
+```
+
+### Empowerment
+
+```{r}
+
+ggplotly(ggplot(data[!is.na(data$SEX),], aes(x=SEX, y=DLT4, fill=SEX)) +
+  geom_bar(stat="summary", fun.y="mean") +
+  labs(y="\nEmpowerment") +
+  theme_bw() +
+  theme(legend.position="none",
+        axis.title.y=element_blank(),
+        axis.title.x=element_text(color="black"),
+        axis.text.x=element_text(color="black"),
+        axis.text.y=element_text(color="black"),
+        axis.line=element_line(size=1, colour = "black"),
+        panel.border=element_rect(size=1, color="black", fill=NA), 
+        panel.background=element_blank()) +
+  coord_flip())
+
+```
+
+### Embedded System
+
+```{r}
+
+ggplotly(ggplot(data[!is.na(data$SEX),], aes(x=SEX, y=DLT5, fill=SEX)) +
+  geom_bar(stat="summary", fun.y="mean") +
+  labs(y="\nEmbedded System") +
+  theme_bw() +
+  theme(legend.position="none",
+        axis.title.y=element_blank(),
+        axis.title.x=element_text(color="black"),
+        axis.text.x=element_text(color="black"),
+        axis.text.y=element_text(color="black"),
+        axis.line=element_line(size=1, colour = "black"),
+        panel.border=element_rect(size=1, color="black", fill=NA), 
+        panel.background=element_blank()) +
+  coord_flip())
+
+```
+
+### System Connection
+
+```{r}
+
+ggplotly(ggplot(data[!is.na(data$SEX),], aes(x=SEX, y=DLT6, fill=SEX)) +
+  geom_bar(stat="summary", fun.y="mean") +
+  labs(y="\nSystem Connection") +
+  theme_bw() +
+  theme(legend.position="none",
+        axis.title.y=element_blank(),
+        axis.title.x=element_text(color="black"),
+        axis.text.x=element_text(color="black"),
+        axis.text.y=element_text(color="black"),
+        axis.line=element_line(size=1, colour = "black"),
+        panel.border=element_rect(size=1, color="black", fill=NA), 
+        panel.background=element_blank()) +
+  coord_flip())
+
+```
+
+### Strategic Leadership
+
+```{r}
+
+ggplotly(ggplot(data[!is.na(data$SEX),], aes(x=SEX, y=DLT7, fill=SEX)) +
+  geom_bar(stat="summary", fun.y="mean") +
+  labs(y="\nStrategic Leadership") +
+  theme_bw() +
+  theme(legend.position="none",
+        axis.title.y=element_blank(),
+        axis.title.x=element_text(color="black"),
+        axis.text.x=element_text(color="black"),
+        axis.text.y=element_text(color="black"),
+        axis.line=element_line(size=1, colour = "black"),
+        panel.border=element_rect(size=1, color="black", fill=NA), 
+        panel.background=element_blank()) +
+  coord_flip())
+
+```
+
+Age {.tabset}
+-----------------------------------------------------------------------
+
+### Learning Organisation
+
+```{r}
+
+ggplotly(ggplot(data[!is.na(data$AGE),], aes(x=AGE, y=DLOT, fill=AGE)) +
+  geom_bar(stat="summary", fun.y="mean") +
+  labs(y="\nLearning Organisation") +
+  theme_bw() +
+  theme(legend.position="none",
+        axis.title.y=element_blank(),
+        axis.title.x=element_text(color="black"),
+        axis.text.x=element_text(color="black"),
+        axis.text.y=element_text(color="black"),
+        axis.line=element_line(size=1, colour = "black"),
+        panel.border=element_rect(size=1, color="black", fill=NA), 
+        panel.background=element_blank()) +
+  coord_flip())
+
+```
+
+### Continuous Learning
+
+```{r}
+
+ggplotly(ggplot(data[!is.na(data$AGE),], aes(x=AGE, y=DLT1, fill=AGE)) +
+  geom_bar(stat="summary", fun.y="mean") +
+  labs(y="\nContinuous Learning") +
+  theme_bw() +
+  theme(legend.position="none",
+        axis.title.y=element_blank(),
+        axis.title.x=element_text(color="black"),
+        axis.text.x=element_text(color="black"),
+        axis.text.y=element_text(color="black"),
+        axis.line=element_line(size=1, colour = "black"),
+        panel.border=element_rect(size=1, color="black", fill=NA), 
+        panel.background=element_blank()) +
+  coord_flip())
+
+```
+
+### Inquiry & Dialogue
+
+```{r}
+
+ggplotly(ggplot(data[!is.na(data$AGE),], aes(x=AGE, y=DLT2, fill=AGE)) +
+  geom_bar(stat="summary", fun.y="mean") +
+  labs(y="\nInquiry & Dialogue") +
+  theme_bw() +
+  theme(legend.position="none",
+        axis.title.y=element_blank(),
+        axis.title.x=element_text(color="black"),
+        axis.text.x=element_text(color="black"),
+        axis.text.y=element_text(color="black"),
+        axis.line=element_line(size=1, colour = "black"),
+        panel.border=element_rect(size=1, color="black", fill=NA), 
+        panel.background=element_blank()) +
+  coord_flip())
+
+```
+
+### Team Learning
+
+```{r}
+
+ggplotly(ggplot(data[!is.na(data$AGE),], aes(x=AGE, y=DLT3, fill=AGE)) +
+  geom_bar(stat="summary", fun.y="mean") +
+  labs(y="\nTeam Learning") +
+  theme_bw() +
+  theme(legend.position="none",
+        axis.title.y=element_blank(),
+        axis.title.x=element_text(color="black"),
+        axis.text.x=element_text(color="black"),
+        axis.text.y=element_text(color="black"),
+        axis.line=element_line(size=1, colour = "black"),
+        panel.border=element_rect(size=1, color="black", fill=NA), 
+        panel.background=element_blank()) +
+  coord_flip())
+
+```
+
+### Empowerment
+
+```{r}
+
+ggplotly(ggplot(data[!is.na(data$AGE),], aes(x=AGE, y=DLT4, fill=AGE)) +
+  geom_bar(stat="summary", fun.y="mean") +
+  labs(y="\nEmpowerment") +
+  theme_bw() +
+  theme(legend.position="none",
+        axis.title.y=element_blank(),
+        axis.title.x=element_text(color="black"),
+        axis.text.x=element_text(color="black"),
+        axis.text.y=element_text(color="black"),
+        axis.line=element_line(size=1, colour = "black"),
+        panel.border=element_rect(size=1, color="black", fill=NA), 
+        panel.background=element_blank()) +
+  coord_flip())
+
+```
+
+### Embedded System
+
+```{r}
+
+ggplotly(ggplot(data[!is.na(data$AGE),], aes(x=AGE, y=DLT5, fill=AGE)) +
+  geom_bar(stat="summary", fun.y="mean") +
+  labs(y="\nEmbedded System") +
+  theme_bw() +
+  theme(legend.position="none",
+        axis.title.y=element_blank(),
+        axis.title.x=element_text(color="black"),
+        axis.text.x=element_text(color="black"),
+        axis.text.y=element_text(color="black"),
+        axis.line=element_line(size=1, colour = "black"),
+        panel.border=element_rect(size=1, color="black", fill=NA), 
+        panel.background=element_blank()) +
+  coord_flip())
+
+```
+
+### System Connection
+
+```{r}
+
+ggplotly(ggplot(data[!is.na(data$AGE),], aes(x=AGE, y=DLT6, fill=AGE)) +
+  geom_bar(stat="summary", fun.y="mean") +
+  labs(y="\nSystem Connection") +
+  theme_bw() +
+  theme(legend.position="none",
+        axis.title.y=element_blank(),
+        axis.title.x=element_text(color="black"),
+        axis.text.x=element_text(color="black"),
+        axis.text.y=element_text(color="black"),
+        axis.line=element_line(size=1, colour = "black"),
+        panel.border=element_rect(size=1, color="black", fill=NA), 
+        panel.background=element_blank()) +
+  coord_flip())
+
+```
+
+### Strategic Leadership
+
+```{r}
+
+ggplotly(ggplot(data[!is.na(data$AGE),], aes(x=AGE, y=DLT7, fill=AGE)) +
+  geom_bar(stat="summary", fun.y="mean") +
+  labs(y="\nStrategic Leadership") +
+  theme_bw() +
+  theme(legend.position="none",
+        axis.title.y=element_blank(),
+        axis.title.x=element_text(color="black"),
+        axis.text.x=element_text(color="black"),
+        axis.text.y=element_text(color="black"),
+        axis.line=element_line(size=1, colour = "black"),
+        panel.border=element_rect(size=1, color="black", fill=NA), 
+        panel.background=element_blank()) +
+  coord_flip())
+
+```
+
+Designation {.tabset}
+-----------------------------------------------------------------------
+
+### Learning Organisation
+
+```{r}
+
+ggplotly(ggplot(data[!is.na(data$DES),], aes(x=DES, y=DLOT, fill=DES)) +
+  geom_bar(stat="summary", fun.y="mean") +
+  labs(y="\nLearning Organisation") +
+  theme_bw() +
+  theme(legend.position="none",
+        axis.title.y=element_blank(),
+        axis.title.x=element_text(color="black"),
+        axis.text.x=element_text(color="black"),
+        axis.text.y=element_text(color="black"),
+        axis.line=element_line(size=1, colour = "black"),
+        panel.border=element_rect(size=1, color="black", fill=NA), 
+        panel.background=element_blank()) +
+  coord_flip())
+
+```
+
+### Continuous Learning
+
+```{r}
+
+ggplotly(ggplot(data[!is.na(data$DES),], aes(x=DES, y=DLT1, fill=DES)) +
+  geom_bar(stat="summary", fun.y="mean") +
+  labs(y="\nContinuous Learning") +
+  theme_bw() +
+  theme(legend.position="none",
+        axis.title.y=element_blank(),
+        axis.title.x=element_text(color="black"),
+        axis.text.x=element_text(color="black"),
+        axis.text.y=element_text(color="black"),
+        axis.line=element_line(size=1, colour = "black"),
+        panel.border=element_rect(size=1, color="black", fill=NA), 
+        panel.background=element_blank()) +
+  coord_flip())
+
+```
+
+### Inquiry & Dialogue
+
+```{r}
+
+ggplotly(ggplot(data[!is.na(data$DES),], aes(x=DES, y=DLT2, fill=DES)) +
+  geom_bar(stat="summary", fun.y="mean") +
+  labs(y="\nInquiry & Dialogue") +
+  theme_bw() +
+  theme(legend.position="none",
+        axis.title.y=element_blank(),
+        axis.title.x=element_text(color="black"),
+        axis.text.x=element_text(color="black"),
+        axis.text.y=element_text(color="black"),
+        axis.line=element_line(size=1, colour = "black"),
+        panel.border=element_rect(size=1, color="black", fill=NA), 
+        panel.background=element_blank()) +
+  coord_flip())
+
+```
+
+### Team Learning
+
+```{r}
+
+ggplotly(ggplot(data[!is.na(data$DES),], aes(x=DES, y=DLT3, fill=DES)) +
+  geom_bar(stat="summary", fun.y="mean") +
+  labs(y="\nTeam Learning") +
+  theme_bw() +
+  theme(legend.position="none",
+        axis.title.y=element_blank(),
+        axis.title.x=element_text(color="black"),
+        axis.text.x=element_text(color="black"),
+        axis.text.y=element_text(color="black"),
+        axis.line=element_line(size=1, colour = "black"),
+        panel.border=element_rect(size=1, color="black", fill=NA), 
+        panel.background=element_blank()) +
+  coord_flip())
+
+```
+
+### Empowerment
+
+```{r}
+
+ggplotly(ggplot(data[!is.na(data$DES),], aes(x=DES, y=DLT4, fill=DES)) +
+  geom_bar(stat="summary", fun.y="mean") +
+  labs(y="\nEmpowerment") +
+  theme_bw() +
+  theme(legend.position="none",
+        axis.title.y=element_blank(),
+        axis.title.x=element_text(color="black"),
+        axis.text.x=element_text(color="black"),
+        axis.text.y=element_text(color="black"),
+        axis.line=element_line(size=1, colour = "black"),
+        panel.border=element_rect(size=1, color="black", fill=NA), 
+        panel.background=element_blank()) +
+  coord_flip())
+
+```
+
+### Embedded System
+
+```{r}
+
+ggplotly(ggplot(data[!is.na(data$DES),], aes(x=DES, y=DLT5, fill=DES)) +
+  geom_bar(stat="summary", fun.y="mean") +
+  labs(y="\nEmbedded System") +
+  theme_bw() +
+  theme(legend.position="none",
+        axis.title.y=element_blank(),
+        axis.title.x=element_text(color="black"),
+        axis.text.x=element_text(color="black"),
+        axis.text.y=element_text(color="black"),
+        axis.line=element_line(size=1, colour = "black"),
+        panel.border=element_rect(size=1, color="black", fill=NA), 
+        panel.background=element_blank()) +
+  coord_flip())
+
+```
+
+### System Connection
+
+```{r}
+
+ggplotly(ggplot(data[!is.na(data$DES),], aes(x=DES, y=DLT6, fill=DES)) +
+  geom_bar(stat="summary", fun.y="mean") +
+  labs(y="\nSystem Connection") +
+  theme_bw() +
+  theme(legend.position="none",
+        axis.title.y=element_blank(),
+        axis.title.x=element_text(color="black"),
+        axis.text.x=element_text(color="black"),
+        axis.text.y=element_text(color="black"),
+        axis.line=element_line(size=1, colour = "black"),
+        panel.border=element_rect(size=1, color="black", fill=NA), 
+        panel.background=element_blank()) +
+  coord_flip())
+
+```
+
+### Strategic Leadership
+
+```{r}
+
+ggplotly(ggplot(data[!is.na(data$DES),], aes(x=DES, y=DLT7, fill=DES)) +
+  geom_bar(stat="summary", fun.y="mean") +
+  labs(y="\nStrategic Leadership") +
+  theme_bw() +
+  theme(legend.position="none",
+        axis.title.y=element_blank(),
+        axis.title.x=element_text(color="black"),
+        axis.text.x=element_text(color="black"),
+        axis.text.y=element_text(color="black"),
+        axis.line=element_line(size=1, colour = "black"),
+        panel.border=element_rect(size=1, color="black", fill=NA), 
+        panel.background=element_blank()) +
+  coord_flip())
+
+```
+
+Agency {.tabset}
+-----------------------------------------------------------------------
+
+### Learning Organisation
+
+```{r}
+
+ggplotly(ggplot(data[!is.na(data$AGNR),], aes(x=AGNR, y=DLOT, fill=AGNR)) +
+  geom_bar(stat="summary", fun.y="mean") +
+  labs(y="\nLearning Organisation") +
+  theme_bw() +
+  theme(legend.position="none",
+        axis.title.y=element_blank(),
+        axis.title.x=element_text(color="black"),
+        axis.text.x=element_text(color="black"),
+        axis.text.y=element_text(color="black"),
+        axis.line=element_line(size=1, colour = "black"),
+        panel.border=element_rect(size=1, color="black", fill=NA), 
+        panel.background=element_blank()) +
+  coord_flip())
+
+```
+
+### Continuous Learning
+
+```{r}
+
+ggplotly(ggplot(data[!is.na(data$AGNR),], aes(x=AGNR, y=DLT1, fill=AGNR)) +
+  geom_bar(stat="summary", fun.y="mean") +
+  labs(y="\nContinuous Learning") +
+  theme_bw() +
+  theme(legend.position="none",
+        axis.title.y=element_blank(),
+        axis.title.x=element_text(color="black"),
+        axis.text.x=element_text(color="black"),
+        axis.text.y=element_text(color="black"),
+        axis.line=element_line(size=1, colour = "black"),
+        panel.border=element_rect(size=1, color="black", fill=NA), 
+        panel.background=element_blank()) +
+  coord_flip())
+
+```
+
+### Inquiry & Dialogue
+
+```{r}
+
+ggplotly(ggplot(data[!is.na(data$AGNR),], aes(x=AGNR, y=DLT2, fill=AGNR)) +
+  geom_bar(stat="summary", fun.y="mean") +
+  labs(y="\nInquiry & Dialogue") +
+  theme_bw() +
+  theme(legend.position="none",
+        axis.title.y=element_blank(),
+        axis.title.x=element_text(color="black"),
+        axis.text.x=element_text(color="black"),
+        axis.text.y=element_text(color="black"),
+        axis.line=element_line(size=1, colour = "black"),
+        panel.border=element_rect(size=1, color="black", fill=NA), 
+        panel.background=element_blank()) +
+  coord_flip())
+
+```
+
+### Team Learning
+
+```{r}
+
+ggplotly(ggplot(data[!is.na(data$AGNR),], aes(x=AGNR, y=DLT3, fill=AGNR)) +
+  geom_bar(stat="summary", fun.y="mean") +
+  labs(y="\nTeam Learning") +
+  theme_bw() +
+  theme(legend.position="none",
+        axis.title.y=element_blank(),
+        axis.title.x=element_text(color="black"),
+        axis.text.x=element_text(color="black"),
+        axis.text.y=element_text(color="black"),
+        axis.line=element_line(size=1, colour = "black"),
+        panel.border=element_rect(size=1, color="black", fill=NA), 
+        panel.background=element_blank()) +
+  coord_flip())
+
+```
+
+### Empowerment
+
+```{r}
+
+ggplotly(ggplot(data[!is.na(data$AGNR),], aes(x=AGNR, y=DLT4, fill=AGNR)) +
+  geom_bar(stat="summary", fun.y="mean") +
+  labs(y="\nEmpowerment") +
+  theme_bw() +
+  theme(legend.position="none",
+        axis.title.y=element_blank(),
+        axis.title.x=element_text(color="black"),
+        axis.text.x=element_text(color="black"),
+        axis.text.y=element_text(color="black"),
+        axis.line=element_line(size=1, colour = "black"),
+        panel.border=element_rect(size=1, color="black", fill=NA), 
+        panel.background=element_blank()) +
+  coord_flip())
+
+```
+
+### Embedded System
+
+```{r}
+
+ggplotly(ggplot(data[!is.na(data$AGNR),], aes(x=AGNR, y=DLT5, fill=AGNR)) +
+  geom_bar(stat="summary", fun.y="mean") +
+  labs(y="\nEmbedded System") +
+  theme_bw() +
+  theme(legend.position="none",
+        axis.title.y=element_blank(),
+        axis.title.x=element_text(color="black"),
+        axis.text.x=element_text(color="black"),
+        axis.text.y=element_text(color="black"),
+        axis.line=element_line(size=1, colour = "black"),
+        panel.border=element_rect(size=1, color="black", fill=NA), 
+        panel.background=element_blank()) +
+  coord_flip())
+
+```
+
+### System Connection
+
+```{r}
+
+ggplotly(ggplot(data[!is.na(data$AGNR),], aes(x=AGNR, y=DLT6, fill=AGNR)) +
+  geom_bar(stat="summary", fun.y="mean") +
+  labs(y="\nSystem Connection") +
+  theme_bw() +
+  theme(legend.position="none",
+        axis.title.y=element_blank(),
+        axis.title.x=element_text(color="black"),
+        axis.text.x=element_text(color="black"),
+        axis.text.y=element_text(color="black"),
+        axis.line=element_line(size=1, colour = "black"),
+        panel.border=element_rect(size=1, color="black", fill=NA), 
+        panel.background=element_blank()) +
+  coord_flip())
+
+```
+
+### Strategic Leadership
+
+```{r}
+
+ggplotly(ggplot(data[!is.na(data$AGNR),], aes(x=AGNR, y=DLT7, fill=AGNR)) +
+  geom_bar(stat="summary", fun.y="mean") +
+  labs(y="\nStrategic Leadership") +
+  theme_bw() +
+  theme(legend.position="none",
+        axis.title.y=element_blank(),
+        axis.title.x=element_text(color="black"),
+        axis.text.x=element_text(color="black"),
+        axis.text.y=element_text(color="black"),
+        axis.line=element_line(size=1, colour = "black"),
+        panel.border=element_rect(size=1, color="black", fill=NA), 
+        panel.background=element_blank()) +
+  coord_flip())
+
+```
+
+SDL & LO
+=======================================================================
+
+Gender {.tabset}
+-----------------------------------------------------------------------
+
+### Learning Organisation
+
+```{r}
+
+style(ggplotly(ggplot(data[!is.na(data$SEX),], aes(x=DLOT, y=SDLT, color=SEX)) +
+  geom_smooth(method=lm, se=FALSE, fullrange=TRUE) +
+  coord_cartesian(xlim=c(1,6), ylim=c(1,6)) +
+  labs(x="\nLearning Organisation",
+       y="Self-Directed Learning\n") +
+  theme_minimal() +
+  theme(legend.title=element_blank())))
+
+```
+
+### Continuous Learning
+
+```{r}
+
+style(ggplotly(ggplot(data[!is.na(data$SEX),], aes(x=DLT1, y=SDLT, color=SEX)) +
+  geom_smooth(method=lm, se=FALSE, fullrange=TRUE) +
+  coord_cartesian(xlim=c(1,6), ylim=c(1,6)) +
+  labs(x="\nContinuous Learning",
+       y="Self-Directed Learning\n") +
+  theme_minimal() +
+  theme(legend.title=element_blank())))
+
+```
+
+### Inquiry & Dialogue
+
+```{r}
+
+style(ggplotly(ggplot(data[!is.na(data$SEX),], aes(x=DLT2, y=SDLT, color=SEX)) +
+  geom_smooth(method=lm, se=FALSE, fullrange=TRUE) +
+  coord_cartesian(xlim=c(1,6), ylim=c(1,6)) +
+  labs(x="\nInquiry & Dialogue",
+       y="Self-Directed Learning\n") +
+  theme_minimal() +
+  theme(legend.title=element_blank())))
+
+```
+
+### Team Learning
+
+```{r}
+
+style(ggplotly(ggplot(data[!is.na(data$SEX),], aes(x=DLT3, y=SDLT, color=SEX)) +
+  geom_smooth(method=lm, se=FALSE, fullrange=TRUE) +
+  coord_cartesian(xlim=c(1,6), ylim=c(1,6)) +
+  labs(x="\nTeam Learning",
+       y="Self-Directed Learning\n") +
+  theme_minimal() +
+  theme(legend.title=element_blank())))
+
+```
+
+### Empowerment
+
+```{r}
+
+style(ggplotly(ggplot(data[!is.na(data$SEX),], aes(x=DLT4, y=SDLT, color=SEX)) +
+  geom_smooth(method=lm, se=FALSE, fullrange=TRUE) +
+  coord_cartesian(xlim=c(1,6), ylim=c(1,6)) +
+  labs(x="\nEmpowerment",
+       y="Self-Directed Learning\n") +
+  theme_minimal() +
+  theme(legend.title=element_blank())))
+
+```
+
+### Embedded System
+
+```{r}
+
+style(ggplotly(ggplot(data[!is.na(data$SEX),], aes(x=DLT5, y=SDLT, color=SEX)) +
+  geom_smooth(method=lm, se=FALSE, fullrange=TRUE) +
+  coord_cartesian(xlim=c(1,6), ylim=c(1,6)) +
+  labs(x="\nEmbedded System",
+       y="Self-Directed Learning\n") +
+  theme_minimal() +
+  theme(legend.title=element_blank())))
+
+```
+
+### System Connection
+
+```{r}
+
+style(ggplotly(ggplot(data[!is.na(data$SEX),], aes(x=DLT6, y=SDLT, color=SEX)) +
+  geom_smooth(method=lm, se=FALSE, fullrange=TRUE) +
+  coord_cartesian(xlim=c(1,6), ylim=c(1,6)) +
+  labs(x="\nSystem Connection",
+       y="Self-Directed Learning\n") +
+  theme_minimal() +
+  theme(legend.title=element_blank())))
+
+```
+
+### Strategic Leadership
+
+```{r}
+
+style(ggplotly(ggplot(data[!is.na(data$SEX),], aes(x=DLT7, y=SDLT, color=SEX)) +
+  geom_smooth(method=lm, se=FALSE, fullrange=TRUE) +
+  coord_cartesian(xlim=c(1,6), ylim=c(1,6)) +
+  labs(x="\nStrategic Leadership",
+       y="Self-Directed Learning\n") +
+  theme_minimal() +
+  theme(legend.title=element_blank())))
+
+```
+
+Age {.tabset}
+-----------------------------------------------------------------------
+
+### Learning Organisation
+
+```{r}
+
+style(ggplotly(ggplot(data[!is.na(data$AGE),], aes(x=DLOT, y=SDLT, color=AGE)) +
+  geom_smooth(method=lm, se=FALSE, fullrange=TRUE) +
+  coord_cartesian(xlim=c(1,6), ylim=c(1,6)) +
+  labs(x="\nLearning Organisation",
+       y="Self-Directed Learning\n") +
+  theme_minimal() +
+  theme(legend.title=element_blank())))
+
+```
+
+### Continuous Learning
+
+```{r}
+
+style(ggplotly(ggplot(data[!is.na(data$AGE),], aes(x=DLT1, y=SDLT, color=AGE)) +
+  geom_smooth(method=lm, se=FALSE, fullrange=TRUE) +
+  coord_cartesian(xlim=c(1,6), ylim=c(1,6)) +
+  labs(x="\nContinuous Learning",
+       y="Self-Directed Learning\n") +
+  theme_minimal() +
+  theme(legend.title=element_blank())))
+
+```
+
+### Inquiry & Dialogue
+
+```{r}
+
+style(ggplotly(ggplot(data[!is.na(data$AGE),], aes(x=DLT2, y=SDLT, color=AGE)) +
+  geom_smooth(method=lm, se=FALSE, fullrange=TRUE) +
+  coord_cartesian(xlim=c(1,6), ylim=c(1,6)) +
+  labs(x="\nInquiry & Dialogue",
+       y="Self-Directed Learning\n") +
+  theme_minimal() +
+  theme(legend.title=element_blank())))
+
+```
+
+### Team Learning
+
+```{r}
+
+style(ggplotly(ggplot(data[!is.na(data$AGE),], aes(x=DLT3, y=SDLT, color=AGE)) +
+  geom_smooth(method=lm, se=FALSE, fullrange=TRUE) +
+  coord_cartesian(xlim=c(1,6), ylim=c(1,6)) +
+  labs(x="\nTeam Learning",
+       y="Self-Directed Learning\n") +
+  theme_minimal() +
+  theme(legend.title=element_blank())))
+
+```
+
+### Empowerment
+
+```{r}
+
+style(ggplotly(ggplot(data[!is.na(data$AGE),], aes(x=DLT4, y=SDLT, color=AGE)) +
+  geom_smooth(method=lm, se=FALSE, fullrange=TRUE) +
+  coord_cartesian(xlim=c(1,6), ylim=c(1,6)) +
+  labs(x="\nEmpowerment",
+       y="Self-Directed Learning\n") +
+  theme_minimal() +
+  theme(legend.title=element_blank())))
+
+```
+
+### Embedded System
+
+```{r}
+
+style(ggplotly(ggplot(data[!is.na(data$AGE),], aes(x=DLT5, y=SDLT, color=AGE)) +
+  geom_smooth(method=lm, se=FALSE, fullrange=TRUE) +
+  coord_cartesian(xlim=c(1,6), ylim=c(1,6)) +
+  labs(x="\nEmbedded System",
+       y="Self-Directed Learning\n") +
+  theme_minimal() +
+  theme(legend.title=element_blank())))
+
+```
+
+### System Connection
+
+```{r}
+
+style(ggplotly(ggplot(data[!is.na(data$AGE),], aes(x=DLT6, y=SDLT, color=AGE)) +
+  geom_smooth(method=lm, se=FALSE, fullrange=TRUE) +
+  coord_cartesian(xlim=c(1,6), ylim=c(1,6)) +
+  labs(x="\nSystem Connection",
+       y="Self-Directed Learning\n") +
+  theme_minimal() +
+  theme(legend.title=element_blank())))
+
+```
+
+### Strategic Leadership
+
+```{r}
+
+style(ggplotly(ggplot(data[!is.na(data$AGE),], aes(x=DLT7, y=SDLT, color=AGE)) +
+  geom_smooth(method=lm, se=FALSE, fullrange=TRUE) +
+  coord_cartesian(xlim=c(1,6), ylim=c(1,6)) +
+  labs(x="\nStrategic Leadership",
+       y="Self-Directed Learning\n") +
+  theme_minimal() +
+  theme(legend.title=element_blank())))
+
+```
+
+Designation {.tabset}
+-----------------------------------------------------------------------
+
+### Learning Organisation
+
+```{r}
+
+style(ggplotly(ggplot(data[!is.na(data$DES),], aes(x=DLOT, y=SDLT, color=DES)) +
+  geom_smooth(method=lm, se=FALSE, fullrange=TRUE) +
+  coord_cartesian(xlim=c(1,6), ylim=c(1,6)) +
+  labs(x="\nLearning Organisation",
+       y="Self-Directed Learning\n") +
+  theme_minimal() +
+  theme(legend.title=element_blank())))
+
+```
+
+### Continuous Learning
+
+```{r}
+
+style(ggplotly(ggplot(data[!is.na(data$DES),], aes(x=DLT1, y=SDLT, color=DES)) +
+  geom_smooth(method=lm, se=FALSE, fullrange=TRUE) +
+  coord_cartesian(xlim=c(1,6), ylim=c(1,6)) +
+  labs(x="\nContinuous Learning",
+       y="Self-Directed Learning\n") +
+  theme_minimal() +
+  theme(legend.title=element_blank())))
+
+```
+
+### Inquiry & Dialogue
+
+```{r}
+
+style(ggplotly(ggplot(data[!is.na(data$DES),], aes(x=DLT2, y=SDLT, color=DES)) +
+  geom_smooth(method=lm, se=FALSE, fullrange=TRUE) +
+  coord_cartesian(xlim=c(1,6), ylim=c(1,6)) +
+  labs(x="\nInquiry & Dialogue",
+       y="Self-Directed Learning\n") +
+  theme_minimal() +
+  theme(legend.title=element_blank())))
+
+```
+
+### Team Learning
+
+```{r}
+
+style(ggplotly(ggplot(data[!is.na(data$DES),], aes(x=DLT3, y=SDLT, color=DES)) +
+  geom_smooth(method=lm, se=FALSE, fullrange=TRUE) +
+  coord_cartesian(xlim=c(1,6), ylim=c(1,6)) +
+  labs(x="\nTeam Learning",
+       y="Self-Directed Learning\n") +
+  theme_minimal() +
+  theme(legend.title=element_blank())))
+
+```
+
+### Empowerment
+
+```{r}
+
+style(ggplotly(ggplot(data[!is.na(data$DES),], aes(x=DLT4, y=SDLT, color=DES)) +
+  geom_smooth(method=lm, se=FALSE, fullrange=TRUE) +
+  coord_cartesian(xlim=c(1,6), ylim=c(1,6)) +
+  labs(x="\nEmpowerment",
+       y="Self-Directed Learning\n") +
+  theme_minimal() +
+  theme(legend.title=element_blank())))
+
+```
+
+### Embedded System
+
+```{r}
+
+style(ggplotly(ggplot(data[!is.na(data$DES),], aes(x=DLT5, y=SDLT, color=DES)) +
+  geom_smooth(method=lm, se=FALSE, fullrange=TRUE) +
+  coord_cartesian(xlim=c(1,6), ylim=c(1,6)) +
+  labs(x="\nEmbedded System",
+       y="Self-Directed Learning\n") +
+  theme_minimal() +
+  theme(legend.title=element_blank())))
+
+```
+
+### System Connection
+
+```{r}
+
+style(ggplotly(ggplot(data[!is.na(data$DES),], aes(x=DLT6, y=SDLT, color=DES)) +
+  geom_smooth(method=lm, se=FALSE, fullrange=TRUE) +
+  coord_cartesian(xlim=c(1,6), ylim=c(1,6)) +
+  labs(x="\nSystem Connection",
+       y="Self-Directed Learning\n") +
+  theme_minimal() +
+  theme(legend.title=element_blank())))
+
+```
+
+### Strategic Leadership
+
+```{r}
+
+style(ggplotly(ggplot(data[!is.na(data$DES),], aes(x=DLT7, y=SDLT, color=DES)) +
+  geom_smooth(method=lm, se=FALSE, fullrange=TRUE) +
+  coord_cartesian(xlim=c(1,6), ylim=c(1,6)) +
+  labs(x="\nStrategic Leadership",
+       y="Self-Directed Learning\n") +
+  theme_minimal() +
+  theme(legend.title=element_blank())))
+
+```
+
+Agency {.tabset}
+-----------------------------------------------------------------------
+
+### Learning Organisation
+
+```{r}
+
+style(ggplotly(ggplot(data[!is.na(data$AGNR),], aes(x=DLOT, y=SDLT, color=AGNR)) +
+  geom_smooth(method=lm, se=FALSE, fullrange=TRUE) +
+  coord_cartesian(xlim=c(1,6), ylim=c(1,6)) +
+  labs(x="\nLearning Organisation",
+       y="Self-Directed Learning\n") +
+  theme_minimal() +
+  theme(legend.title=element_blank())), visible="legendonly")
+
+```
+
+### Continuous Learning
+
+```{r}
+
+style(ggplotly(ggplot(data[!is.na(data$AGNR),], aes(x=DLT1, y=SDLT, color=AGNR)) +
+  geom_smooth(method=lm, se=FALSE, fullrange=TRUE) +
+  coord_cartesian(xlim=c(1,6), ylim=c(1,6)) +
+  labs(x="\nContinuous Learning",
+       y="Self-Directed Learning\n") +
+  theme_minimal() +
+  theme(legend.title=element_blank())), visible="legendonly")
+
+```
+
+### Inquiry & Dialogue
+
+```{r}
+
+style(ggplotly(ggplot(data[!is.na(data$AGNR),], aes(x=DLT2, y=SDLT, color=AGNR)) +
+  geom_smooth(method=lm, se=FALSE, fullrange=TRUE) +
+  coord_cartesian(xlim=c(1,6), ylim=c(1,6)) +
+  labs(x="\nInquiry & Dialogue",
+       y="Self-Directed Learning\n") +
+  theme_minimal() +
+  theme(legend.title=element_blank())), visible="legendonly")
+
+```
+
+### Team Learning
+
+```{r}
+
+style(ggplotly(ggplot(data[!is.na(data$AGNR),], aes(x=DLT3, y=SDLT, color=AGNR)) +
+  geom_smooth(method=lm, se=FALSE, fullrange=TRUE) +
+  coord_cartesian(xlim=c(1,6), ylim=c(1,6)) +
+  labs(x="\nTeam Learning",
+       y="Self-Directed Learning\n") +
+  theme_minimal() +
+  theme(legend.title=element_blank())), visible="legendonly")
+
+```
+
+### Empowerment
+
+```{r}
+
+style(ggplotly(ggplot(data[!is.na(data$AGNR),], aes(x=DLT4, y=SDLT, color=AGNR)) +
+  geom_smooth(method=lm, se=FALSE, fullrange=TRUE) +
+  coord_cartesian(xlim=c(1,6), ylim=c(1,6)) +
+  labs(x="\nEmpowerment",
+       y="Self-Directed Learning\n") +
+  theme_minimal() +
+  theme(legend.title=element_blank())), visible="legendonly")
+
+```
+
+### Embedded System
+
+```{r}
+
+style(ggplotly(ggplot(data[!is.na(data$AGNR),], aes(x=DLT5, y=SDLT, color=AGNR)) +
+  geom_smooth(method=lm, se=FALSE, fullrange=TRUE) +
+  coord_cartesian(xlim=c(1,6), ylim=c(1,6)) +
+  labs(x="\nEmbedded System",
+       y="Self-Directed Learning\n") +
+  theme_minimal() +
+  theme(legend.title=element_blank())), visible="legendonly")
+
+```
+
+### System Connection
+
+```{r}
+
+style(ggplotly(ggplot(data[!is.na(data$AGNR),], aes(x=DLT6, y=SDLT, color=AGNR)) +
+  geom_smooth(method=lm, se=FALSE, fullrange=TRUE) +
+  coord_cartesian(xlim=c(1,6), ylim=c(1,6)) +
+  labs(x="\nSystem Connection",
+       y="Self-Directed Learning\n") +
+  theme_minimal() +
+  theme(legend.title=element_blank())), visible="legendonly")
+
+```
+
+### Strategic Leadership
+
+```{r}
+
+style(ggplotly(ggplot(data[!is.na(data$AGNR),], aes(x=DLT7, y=SDLT, color=AGNR)) +
+  geom_smooth(method=lm, se=FALSE, fullrange=TRUE) +
+  coord_cartesian(xlim=c(1,6), ylim=c(1,6)) +
+  labs(x="\nStrategic Leadership",
+       y="Self-Directed Learning\n") +
+  theme_minimal() +
+  theme(legend.title=element_blank())), visible="legendonly")
+
+```
+
+Text Analytics
+=======================================================================
+
+Row {.tabset}
+-----------------------------------------------------------------------
+
+### Motivators
+
+```{r}
+
+corpus <-VCorpus(DataframeSource(data.tm.pos))
+
+corpus <- tm_map(corpus, content_transformer(tolower))
+corpus <- tm_map(corpus, removeNumbers)
+corpus <- tm_map(corpus, removeWords, stopwords("english"))
+corpus <- tm_map(corpus, removeWords, c("na", "nil", "no comment", "no comments"))
+corpus <- tm_map(corpus, removePunctuation)
+corpus <- tm_map(corpus, stripWhitespace)
+
+tdm <- TermDocumentMatrix(corpus)
+tdm <- as.matrix(tdm)
+frq <- sort(rowSums(tdm), decreasing=TRUE)
+dat <- data.frame(word=names(frq), freq=frq)
+
+set.seed(1234)
+
+wordcloud(words=dat$word, freq=dat$freq, min.freq=1, max.words=200, random.order=FALSE,
+          rot.per=0.35, colors=brewer.pal(5, "Dark2"))
+
+```
+
+### Hindrances
+
+```{r}
+
+corpus <-VCorpus(DataframeSource(data.tm.neg))
+
+corpus <- tm_map(corpus, content_transformer(tolower))
+corpus <- tm_map(corpus, removeNumbers)
+corpus <- tm_map(corpus, removeWords, stopwords("english"))
+corpus <- tm_map(corpus, removeWords, c("na", "nil", "no comment", "no comments"))
+corpus <- tm_map(corpus, removePunctuation)
+corpus <- tm_map(corpus, stripWhitespace)
+
+tdm <- TermDocumentMatrix(corpus)
+tdm <- as.matrix(tdm)
+frq <- sort(rowSums(tdm), decreasing=TRUE)
+dat <- data.frame(word=names(frq), freq=frq)
+
+set.seed(1234)
+
+wordcloud(words=dat$word, freq=dat$freq, min.freq=1, max.words=200, random.order=FALSE,
+          rot.per=0.35, colors=brewer.pal(20, "Dark2"))
+
+```
+
+Row {.tabset}
+-----------------------------------------------------------------------
+
+### Motivators
+
+```{r}
+
+bigram.pos <- unnest_tokens(data.tm.pos, bigram, text, token="ngrams", n=2)
+
+bigram.pos.count <- count(bigram.pos, bigram, sort=TRUE)
+bigram.pos.count <- bigram.pos.count[-1,]
+bigram.pos.count <- head(bigram.pos.count, 20)
+
+bigram.pos.sep <- separate(bigram.pos, bigram, c("word1", "word2"), sep=" ")
+bigram.pos.fil <- bigram.pos.sep %>%
+  filter(!word1 %in% stop_words$word) %>%
+  filter(!word2 %in% stop_words$word)
+bigram.pos.tbl <- count(bigram.pos.fil, word1, word2, sort=TRUE)
+bigram.pos.tbl$bigramr <- paste(bigram.pos.tbl$word1, bigram.pos.tbl$word2, sep=" ")
+bigram.pos.tbl <- bigram.pos.tbl[-1,]
+bigram.pos.tbl <- head(bigram.pos.tbl, 20)
+
+p.bigram.pos1 <- ggplot(bigram.pos.count, aes(x=reorder(bigram, n), y=n, group=1)) +
+  geom_bar(stat="identity") +
+  labs(title="In your organisation,\nwhat motivates you to learn?",
+       y="Frequency",
+       x="Bigram") +
+  theme_bw() +
+  theme(plot.title=element_text(hjust=0.5)) +
+  coord_flip()
+p.bigram.pos1
+
+p.bigram.pos2 <- ggplot(bigram.pos.tbl, aes(x=reorder(bigramr, n), y=n, group=1)) +
+  geom_bar(stat="identity") +
+  labs(title="In your organisation,\nwhat motivates you to learn?",
+       y="Frequency",
+       x="Bigram") +
+  theme_bw() +
+  theme(plot.title=element_text(hjust=0.5)) +
+  coord_flip()
+p.bigram.pos2
+
+```
+
+### Motivators (Undirected Network)
+
+```{r}
+
+bigram.pos <- unnest_tokens(data.tm.pos, bigram, text, token="ngrams", n=2)
+
+bigram.pos.sep <- separate(bigram.pos, bigram, c("word1", "word2"), sep=" ")
+bigram.pos.fil <- bigram.pos.sep %>%
+  filter(!word1 %in% stop_words$word) %>%
+  filter(!word2 %in% stop_words$word)
+bigram.pos.tbl <- count(bigram.pos.fil, word1, word2, sort=TRUE)
+bigram.pos.tbl <- bigram.pos.tbl[-1,]
+
+bigram.pos.gph <- graph_from_data_frame(filter(bigram.pos.tbl, n>1))
+
+set.seed(1234)
+
+ggraph(bigram.pos.gph, layout="fr") +
+  geom_edge_link() +
+  geom_node_point() +
+  geom_node_text(aes(label=name), vjust=1, hjust=1) +
+  theme_bw() +
+  theme(axis.title.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.x=element_text(color="black"),
+        axis.text.y=element_text(color="black"),
+        axis.line=element_line(size=1, colour = "black"),
+        panel.border=element_rect(size=1, color="black", fill=NA), 
+        panel.background=element_blank())
+
+```
+
+### Motivators (Directed Network)
+
+```{r}
+
+bigram.pos <- unnest_tokens(data.tm.pos, bigram, text, token="ngrams", n=2)
+
+bigram.pos.sep <- separate(bigram.pos, bigram, c("word1", "word2"), sep=" ")
+bigram.pos.fil <- bigram.pos.sep %>%
+  filter(!word1 %in% stop_words$word) %>%
+  filter(!word2 %in% stop_words$word)
+bigram.pos.tbl <- count(bigram.pos.fil, word1, word2, sort=TRUE)
+bigram.pos.tbl <- bigram.pos.tbl[-1,]
+
+bigram.pos.gph <- graph_from_data_frame(filter(bigram.pos.tbl, n>1))
+
+set.seed(1234)
+
+a <- grid::arrow(type="closed", length=unit(.15, "inches"))
+
+ggraph(bigram.pos.gph, layout="fr") +
+  geom_edge_link(aes(edge_alpha=n), show.legend=FALSE, arrow=a, end_cap=circle(.07, "inches")) +
+  geom_node_point(color="lightblue", size=5) +
+  geom_node_text(aes(label=name), vjust=1, hjust=1) +
+  theme_bw() +
+  theme(axis.title.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.x=element_text(color="black"),
+        axis.text.y=element_text(color="black"),
+        axis.line=element_line(size=1, colour = "black"),
+        panel.border=element_rect(size=1, color="black", fill=NA), 
+        panel.background=element_blank())
+
+```
+
+### Hindrances
+
+```{r}
+
+bigram.neg <- unnest_tokens(data.tm.neg, bigram, text, token="ngrams", n=2)
+
+bigram.neg.count <- count(bigram.neg, bigram, sort=TRUE)
+bigram.neg.count <- bigram.neg.count[-1,]
+bigram.neg.count <- head(bigram.neg.count, 20)
+
+bigram.neg.sep <- separate(bigram.neg, bigram, c("word1", "word2"), sep=" ")
+bigram.neg.fil <- bigram.neg.sep %>%
+  filter(!word1 %in% stop_words$word) %>%
+  filter(!word2 %in% stop_words$word)
+bigram.neg.tbl <- count(bigram.neg.fil, word1, word2, sort=TRUE)
+bigram.neg.tbl$bigramr <- paste(bigram.neg.tbl$word1, bigram.neg.tbl$word2, sep=" ")
+bigram.neg.tbl <- bigram.neg.tbl[-1,]
+bigram.neg.tbl <- head(bigram.neg.tbl, 20)
+
+p.bigram.neg1 <- ggplot(bigram.neg.count, aes(x=reorder(bigram, n), y=n, group=1)) +
+  geom_bar(stat="identity") +
+  labs(title="In your organisation,\nwhat hinders you from learning?",
+       y="Frequency",
+       x="Bigram") +
+  theme_bw() +
+  theme(plot.title=element_text(hjust=0.5)) +
+  coord_flip()
+p.bigram.neg1
+
+p.bigram.neg2 <- ggplot(bigram.neg.tbl, aes(x=reorder(bigramr, n), y=n, group=1)) +
+  geom_bar(stat="identity") +
+  labs(title="In your organisation,\nwhat hinders you from learning?",
+       y="Frequency",
+       x="Bigram") +
+  theme_bw() +
+  theme(plot.title=element_text(hjust=0.5)) +
+  coord_flip()
+p.bigram.neg2
+
+```
+
+### Hindrances (Undirected Network)
+
+```{r}
+
+bigram.neg <- unnest_tokens(data.tm.neg, bigram, text, token="ngrams", n=2)
+
+bigram.neg.sep <- separate(bigram.neg, bigram, c("word1", "word2"), sep=" ")
+bigram.neg.fil <- bigram.neg.sep %>%
+  filter(!word1 %in% stop_words$word) %>%
+  filter(!word2 %in% stop_words$word)
+bigram.neg.tbl <- count(bigram.neg.fil, word1, word2, sort=TRUE)
+bigram.neg.tbl <- bigram.neg.tbl[-1,]
+
+bigram.neg.gph <- graph_from_data_frame(filter(bigram.neg.tbl, n>1))
+
+set.seed(1234)
+
+ggraph(bigram.neg.gph, layout="fr") +
+  geom_edge_link() +
+  geom_node_point() +
+  geom_node_text(aes(label=name), vjust=1, hjust=1) +
+  theme_bw() +
+  theme(axis.title.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.x=element_text(color="black"),
+        axis.text.y=element_text(color="black"),
+        axis.line=element_line(size=1, colour = "black"),
+        panel.border=element_rect(size=1, color="black", fill=NA), 
+        panel.background=element_blank())
+
+```
+
+### Hindrances (Directed Network)
+
+```{r}
+
+bigram.neg <- unnest_tokens(data.tm.neg, bigram, text, token="ngrams", n=2)
+
+bigram.neg.sep <- separate(bigram.neg, bigram, c("word1", "word2"), sep=" ")
+bigram.neg.fil <- bigram.neg.sep %>%
+  filter(!word1 %in% stop_words$word) %>%
+  filter(!word2 %in% stop_words$word)
+bigram.neg.tbl <- count(bigram.neg.fil, word1, word2, sort=TRUE)
+bigram.neg.tbl <- bigram.neg.tbl[-1,]
+
+bigram.neg.gph <- graph_from_data_frame(filter(bigram.neg.tbl, n>1))
+
+set.seed(1234)
+
+a <- grid::arrow(type="closed", length=unit(.15, "inches"))
+
+ggraph(bigram.neg.gph, layout="fr") +
+  geom_edge_link(aes(edge_alpha=n), show.legend=FALSE, arrow=a, end_cap=circle(.07, "inches")) +
+  geom_node_point(color="lightblue", size=5) +
+  geom_node_text(aes(label=name), vjust=1, hjust=1) +
+  theme_bw() +
+  theme(axis.title.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.x=element_text(color="black"),
+        axis.text.y=element_text(color="black"),
+        axis.line=element_line(size=1, colour = "black"),
+        panel.border=element_rect(size=1, color="black", fill=NA), 
+        panel.background=element_blank())
+
+```
+
+Row {.tabset}
+-----------------------------------------------------------------------
+
+### Motivators
+
+```{r}
+
+trigram.pos <- unnest_tokens(data.tm.pos, trigram, text, token="ngrams", n=3)
+
+trigram.pos.count <- count(trigram.pos, trigram, sort=TRUE)
+trigram.pos.count <- trigram.pos.count[-1,]
+trigram.pos.count <- head(trigram.pos.count, 20)
+
+trigram.pos.sep <- separate(trigram.pos, trigram, c("word1", "word2", "word3"), sep=" ")
+trigram.pos.fil <- trigram.pos.sep %>%
+  filter(!word1 %in% stop_words$word) %>%
+  filter(!word2 %in% stop_words$word) %>%
+  filter(!word3 %in% stop_words$word)
+trigram.pos.tbl <- count(trigram.pos.fil, word1, word2, word3, sort=TRUE)
+trigram.pos.tbl$trigramr <- paste(trigram.pos.tbl$word1, trigram.pos.tbl$word2, trigram.pos.tbl$word3, sep=" ")
+trigram.pos.tbl <- trigram.pos.tbl[-1,]
+trigram.pos.tbl <- head(trigram.pos.tbl, 20)
+
+p.trigram.pos1 <- ggplot(trigram.pos.count, aes(x=reorder(trigram, n), y=n, group=1)) +
+  geom_bar(stat="identity") +
+  labs(title="In your organisation,\nwhat motivates you to learn?",
+       y="Frequency",
+       x="Trigram") +
+  theme_bw() +
+  theme(plot.title=element_text(hjust=0.5)) +
+  coord_flip()
+p.trigram.pos1
+
+p.trigram.pos2 <- ggplot(trigram.pos.tbl, aes(x=reorder(trigramr, n), y=n, group=1)) +
+  geom_bar(stat="identity") +
+  labs(title="In your organisation,\nwhat motivates you to learn?",
+       y="Frequency",
+       x="Trigram") +
+  theme_bw() +
+  theme(plot.title=element_text(hjust=0.5)) +
+  coord_flip()
+p.trigram.pos2
+
+```
+
+### Hindrances
+
+```{r}
+
+trigram.neg <- unnest_tokens(data.tm.neg, trigram, text, token="ngrams", n=3)
+
+trigram.neg.count <- count(trigram.neg, trigram, sort=TRUE)
+trigram.neg.count <- trigram.neg.count[-1,]
+trigram.neg.count <- head(trigram.neg.count, 20)
+
+trigram.neg.sep <- separate(trigram.neg, trigram, c("word1", "word2", "word3"), sep=" ")
+trigram.neg.fil <- trigram.neg.sep %>%
+  filter(!word1 %in% stop_words$word) %>%
+  filter(!word2 %in% stop_words$word) %>%
+  filter(!word3 %in% stop_words$word)
+trigram.neg.tbl <- count(trigram.neg.fil, word1, word2, word3, sort=TRUE)
+trigram.neg.tbl$trigramr <- paste(trigram.neg.tbl$word1, trigram.neg.tbl$word2, trigram.neg.tbl$word3, sep=" ")
+trigram.neg.tbl <- trigram.neg.tbl[-1,]
+trigram.neg.tbl <- head(trigram.neg.tbl, 20)
+
+p.trigram.neg1 <- ggplot(trigram.neg.count, aes(x=reorder(trigram, n), y=n, group=1)) +
+  geom_bar(stat="identity") +
+  labs(title="In your organisation,\nwhat hinders you from learning?",
+       y="Frequency",
+       x="Trigram") +
+  theme_bw() +
+  theme(plot.title=element_text(hjust=0.5)) +
+  coord_flip()
+p.trigram.neg1
+
+p.trigram.neg2 <- ggplot(trigram.neg.tbl, aes(x=reorder(trigramr, n), y=n, group=1)) +
+  geom_bar(stat="identity") +
+  labs(title="In your organisation,\nwhat hinders you from learning?",
+       y="Frequency",
+       x="Trigram") +
+  theme_bw() +
+  theme(plot.title=element_text(hjust=0.5)) +
+  coord_flip()
+p.trigram.neg2
+
+```
+
+Time {.tabset}
+-----------------------------------------------------------------------
+
+### Gender
+
+```{r}
+
+ggplotly(ggplot(data[!is.na(data$SEX) & !is.na(data$lacktime),], aes(x=SEX, fill=lacktime)) +
+  geom_bar(position="fill") +
+  labs(x="\nGender",
+       y="Proportion\n") +
+  theme_few() +
+  theme(axis.text.x=element_blank(),
+        legend.title=element_blank()))
+```
+
+### Age
+
+```{r}
+
+ggplotly(ggplot(data[!is.na(data$AGE) & !is.na(data$lacktime),], aes(x=AGE, fill=lacktime)) +
+  geom_bar(position="fill") +
+  labs(x="\nAge",
+       y="Proportion\n") +
+  theme_few() +
+  theme(axis.text.x=element_blank(),
+        legend.title=element_blank()))
+```
+
+### Designation
+
+```{r}
+
+ggplotly(ggplot(data[!is.na(data$DES) & !is.na(data$lacktime),], aes(x=DES, fill=lacktime)) +
+  geom_bar(position="fill") +
+  labs(x="\nDesignation",
+       y="Proportion\n") +
+  theme_few() +
+  theme(axis.text.x=element_blank(),
+        legend.title=element_blank()))
+```
+
+### Agency
+
+```{r}
+
+ggplotly(ggplot(data[!is.na(data$AGNR) & !is.na(data$lacktime),], aes(x=AGNR, fill=lacktime)) +
+  geom_bar(position="fill") +
+  labs(x="\nAgency",
+       y="Proportion\n") +
+  theme_few() +
+  theme(axis.text.x=element_blank(),
+        legend.title=element_blank()))
+
+```
+
+Topic Model
+=======================================================================
+
+Row {.tabset}
+-----------------------------------------------------------------------
+
+### Motivators
+
+```{r fig.width=10}
+
+corpus <-VCorpus(DataframeSource(data.tm.pos))
+
+corpus <- tm_map(corpus, content_transformer(tolower))
+corpus <- tm_map(corpus, removeNumbers)
+corpus <- tm_map(corpus, removeWords, stopwords("english"))
+corpus <- tm_map(corpus, removeWords, c("na", "nil", "no comment", "no comments"))
+corpus <- tm_map(corpus, removePunctuation)
+corpus <- tm_map(corpus, stripWhitespace)
+
+dtm <- DocumentTermMatrix(corpus)
+rowTotals <- apply(dtm, 1, sum)
+dtm <- dtm[rowTotals > 0,]
+
+tm11 <- LDA(dtm, k=11, control=list(alpha=50/11, delta=0.1, seed=1234), method="Gibbs")
+beta11 <- tidy(tm11)
+
+t.beta11 <- beta11 %>%
+  group_by(topic) %>%
+  top_n(10, beta) %>%
+  ungroup() %>%
+  arrange(topic, -beta)
+p.beta11 <- t.beta11 %>%
+  mutate(term=reorder(term, beta)) %>%
+  ggplot(aes(term, beta, fill=factor(topic))) +
+  geom_col(show.legend=FALSE) +
+  facet_wrap(~topic, scales="free") +
+  coord_flip(); p.beta11
+
+```
+
+### Hindrances
+
+```{r fig.width=10}
+
+corpus <-VCorpus(DataframeSource(data.tm.neg))
+
+corpus <- tm_map(corpus, content_transformer(tolower))
+corpus <- tm_map(corpus, removeNumbers)
+corpus <- tm_map(corpus, removeWords, stopwords("english"))
+corpus <- tm_map(corpus, removeWords, c("na", "nil", "no comment", "no comments"))
+corpus <- tm_map(corpus, removePunctuation)
+corpus <- tm_map(corpus, stripWhitespace)
+
+dtm <- DocumentTermMatrix(corpus)
+rowTotals <- apply(dtm, 1, sum)
+dtm <- dtm[rowTotals > 0,]
+
+tm11 <- LDA(dtm, k=11, control=list(alpha=50/11, delta=0.1, seed=1234), method="Gibbs")
+beta11 <- tidy(tm11)
+
+t.beta11 <- beta11 %>%
+  group_by(topic) %>%
+  top_n(10, beta) %>%
+  ungroup() %>%
+  arrange(topic, -beta)
+p.beta11 <- t.beta11 %>%
+  mutate(term=reorder(term, beta)) %>%
+  ggplot(aes(term, beta, fill=factor(topic))) +
+  geom_col(show.legend=FALSE) +
+  facet_wrap(~topic, scales="free") +
+  coord_flip(); p.beta11
+
+```
+
+Network Analytics
+=======================================================================
+
+Row {data-height=500, .tabset}
+-----------------------------------------------------------------------
+
+### Self-Directed Learning (Items)
+
+```{r}
+
+data.sdlit <- subset(data, select=c(SDL1, SDL2, SDL3, SDL4, SDL5,
+                                    SDL6, SDL7, SDL8, SDL9, SDL10,
+                                    SDL11, SDL12, SDL13, SDL14, SDL15,
+                                    SDL16))
+
+network.sdlit <- estimateNetwork(data.sdlit, default="EBICglasso")
+qgraph(network.sdlit[[1]], layout="spring")
+a <- qgraph(cor(data.sdlit), layout="spring", esize = 8, cut=0.6)
+centralityPlot(a, include=c("Strength"))
+
+```
+
+Row {data-height=500, .tabset}
+-----------------------------------------------------------------------
+
+### Learning Organisation (Dimensions)
+
+```{r}
+
+data.const <- subset(data, select=c(DLT1, DLT2, DLT3, DLT4, DLT5, DLT6, DLT7))
+
+network.const <- estimateNetwork(data.const, default="EBICglasso")
+qgraph(network.const[[1]], layout="spring")
+centralityPlot(network.const, include=c("Strength", "Closeness", "Betweenness"))
+
+```
+
+### Learning Organisation (Items)
+
+```{r}
+
+groups <- list("Continuous Learning" = c(1,2,3),
+               "Inquiry & Dialogue" = c(4,5,6),
+               "Team Learning" = c(7,8,9),
+               "Empowerment" = c(10,11,12),
+               "Embedded System" = c(13,14,15),
+               "System Connection" = c(16,17,18),
+               "Strategic Leadership" = c(19,20,21))
+
+data.items <- subset(data, select=c(DLO1, DLO2, DLO3, DLO4, DLO5,
+                                    DLO6, DLO7, DLO8, DLO9, DLO10,
+                                    DLO11, DLO12, DLO13, DLO14, DLO15,
+                                    DLO16, DLO17, DLO18, DLO19, DLO20,
+                                    DLO21))
+
+network.items <- estimateNetwork(data.items, default="EBICglasso")
+qgraph(network.items[[1]], layout="spring", groups=groups)
+centralityPlot(network.items, include=c("Strength", "Closeness", "Betweenness"))
+
+```
